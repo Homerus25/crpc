@@ -1,5 +1,6 @@
 #include <iostream>
 #include <boost/asio.hpp>
+#include "cista.h"
 
 std::string make_daytime_string()
 {
@@ -19,9 +20,12 @@ int main(int argc, char* argv[])
             acceptor.accept(socket);
 
             std::string message = make_daytime_string();
+            cista::offset::string msg(message);
+            std::vector<unsigned char> buffer;
+            buffer = cista::serialize(msg);
 
             boost::system::error_code error;
-            boost::asio::write(socket, boost::asio::buffer(message), error);
+            boost::asio::write(socket, boost::asio::buffer(buffer), error);
         }
     }
     catch (std::exception& e)

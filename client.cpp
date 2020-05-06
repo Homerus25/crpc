@@ -1,5 +1,6 @@
 #include <iostream>
 #include <boost/asio.hpp>
+#include "cista.h"
 
 int main(int argc, char* argv[])
 {
@@ -22,7 +23,8 @@ int main(int argc, char* argv[])
             else if (error)
                 throw boost::system::system_error(error); // Some other error.
 
-            std::cout.write(buffer.data(), len);
+            auto* deserial = cista::offset::deserialize<cista::raw::string>(buffer);
+            std::cout << "\n" << *deserial << "\n";
         }
     }
     catch (std::exception& e)
