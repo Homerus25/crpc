@@ -1,5 +1,5 @@
-#include <iostream>
-#include <boost/asio.hpp>
+#include "server.h"
+
 #include "cista.h"
 
 std::string make_daytime_string()
@@ -9,29 +9,23 @@ std::string make_daytime_string()
     return ctime(&now);
 }
 
-int main(int argc, char* argv[])
+crpc::server::server(unsigned int port)
+    : acceptor(io, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port))
 {
-    try {
-        boost::asio::io_context io;
-        boost::asio::ip::tcp::acceptor acceptor(io, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 2000));
+}
 
-        for(;;) {
-            boost::asio::ip::tcp::socket socket(io);
-            acceptor.accept(socket);
+void crpc::server::run()
+{
+    for(;;) {
+        boost::asio::ip::tcp::socket socket(io);
+        acceptor.accept(socket);
 
-            std::string message = make_daytime_string();
-            cista::offset::string msg(message);
-            std::vector<unsigned char> buffer;
-            buffer = cista::serialize(msg);
+        std::string message = make_daytime_string();
+        cista::offset::string msg(message);
+        std::vector<unsigned char> buffer;
+        buffer = cista::serialize(msg);
 
-            boost::system::error_code error;
-            boost::asio::write(socket, boost::asio::buffer(buffer), error);
-        }
+        boost::system::error_code error;
+        boost::asio::write(socket, boost::asio::buffer(buffer), error);
     }
-    catch (std::exception& e)
-    {
-        std::cerr << e.what() << std::endl;
-    }
-
-    return 0;
 }
