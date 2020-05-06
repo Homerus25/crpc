@@ -2,11 +2,11 @@
 
 #include <boost/asio.hpp>
 
-namespace crpc {
-
-    class server {
+namespace crpc
+{
+    class Server {
     public:
-        explicit server(unsigned int port);
+        explicit Server(unsigned int port);
 
         void run();
 

@@ -1,4 +1,4 @@
-#include "server.h"
+#include "Server.h"
 
 #include "cista.h"
 
@@ -9,12 +9,12 @@ std::string make_daytime_string()
     return ctime(&now);
 }
 
-crpc::server::server(unsigned int port)
+crpc::Server::Server(unsigned int port)
     : acceptor(io, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port))
 {
 }
 
-void crpc::server::run()
+void crpc::Server::run()
 {
     for(;;) {
         boost::asio::ip::tcp::socket socket(io);

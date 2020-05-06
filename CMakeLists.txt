@@ -12,7 +12,7 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 SET(USED_LIBS ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY})
 
-add_executable(crpc-Server server-main.cpp server.cpp)
+add_executable(crpc-Server server-main.cpp Server.cpp)
 target_link_libraries(crpc-Server ${USED_LIBS})
 
 ##################
@@ -23,5 +23,5 @@ find_package(Boost 1.72.0 REQUIRED system)
 #INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 #add_subdirectory(cista)
 
-add_executable(crpc-Client client-main.cpp)
+add_executable(crpc-Client client-main.cpp Client.cpp)
 target_link_libraries(crpc-Client ${USED_LIBS})

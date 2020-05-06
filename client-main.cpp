@@ -1,9 +1,12 @@
 #include <iostream>
 #include <boost/asio.hpp>
 #include "cista.h"
+#include "Client.h"
+
 
 int main(int argc, char* argv[])
 {
+    /*
     std::string host = "127.0.0.1";
     try
     {
@@ -31,6 +34,10 @@ int main(int argc, char* argv[])
     {
         std::cerr << e.what() << std::endl;
     }
+     */
+
+    crpc::Client client("127.0.0.1", 2000);
+    std::cout << client.getDayTime();
 
     return 0;
 }

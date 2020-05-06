@@ -1,8 +1,8 @@
-#include "server.h"
+#include "Server.h"
 
 int main(int argc, char* argv[])
 {
-    crpc::server server(2000);
+    crpc::Server server(2000);
     server.run();
 
     return 0;
