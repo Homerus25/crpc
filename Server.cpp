@@ -17,15 +17,20 @@ crpc::Server::Server(unsigned int port)
 void crpc::Server::run()
 {
     for(;;) {
+        boost::system::error_code error;
         boost::asio::ip::tcp::socket socket(io);
         acceptor.accept(socket);
 
-        std::string message = make_daytime_string();
-        cista::offset::string msg(message);
-        std::vector<unsigned char> buffer;
-        buffer = cista::serialize(msg);
+        std::vector<char> buffer(128);
+        size_t len = socket.read_some(boost::asio::buffer(buffer), error);
+        if(std::string_view(buffer.data()) == "getDayTime") {
 
-        boost::system::error_code error;
-        boost::asio::write(socket, boost::asio::buffer(buffer), error);
+            std::string message = make_daytime_string();
+            cista::offset::string msg(message);
+            std::vector<unsigned char> buffer;
+            buffer = cista::serialize(msg);
+
+            boost::asio::write(socket, boost::asio::buffer(buffer), error);
+        }
     }
 }

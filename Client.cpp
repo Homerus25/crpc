@@ -14,6 +14,9 @@ std::string crpc::Client::getDayTime()
     for(;;) {
         std::vector<char> buffer(128);
         boost::system::error_code error;
+
+        socket.write_some(boost::asio::buffer("getDayTime"), error);
+
         size_t len = socket.read_some(boost::asio::buffer(buffer), error);
 
         if (error == boost::asio::error::eof)
