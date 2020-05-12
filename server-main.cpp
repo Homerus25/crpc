@@ -11,12 +11,11 @@ cista::offset::string make_daytime_string()
     return std::ctime(&now);
 }
 
-/*
 int addTwoNums(int a, int b)
 {
+    std::cout << "add two nums: " << a << " " << b << "\n";
     return a + b;
 }
-*/
 
 int main(int argc, char* argv[])
 {
@@ -26,7 +25,13 @@ int main(int argc, char* argv[])
     //server.registerFunction<cista::offset::string>(func);
     server.registerFunction<cista::offset::string>(make_daytime_string);
 
+    std::function<int(int, int)> func2 = addTwoNums;
+    server.registerFunctionArgs<int, int, int>(func2);
+    //server.registerFunctionArgs<int, int, int>(addTwoNums);
+
+
     server.run();
+    //server.test();
 
     return 0;
 }
