@@ -39,20 +39,11 @@ namespace crpc
             return buf;
         }
 
-        template<typename Ag1, typename Ag2>
-        std::vector<unsigned char> serialize(Ag1 arg1, Ag2 arg2)
+        template<typename Ag1, typename ...Args>
+        std::vector<unsigned char> serialize(Ag1 arg1, Args...args)
         {
             std::vector<unsigned char> buf = serialize(arg1);
-            auto buf2 = serialize(arg2);
-            appendVector(buf, buf2);
-            return buf;
-        }
-
-        template<typename Ag1, typename Ag2, typename Ag3>
-        std::vector<unsigned char> serialize(Ag1 arg1, Ag2 arg2, Ag3 arg3)
-        {
-            std::vector<unsigned char> buf = serialize(arg1, arg2);
-            auto buf2 = serialize(arg3);
+            auto buf2 = serialize(args...);
             appendVector(buf, buf2);
             return buf;
         }
@@ -112,4 +103,3 @@ resultType crpc::Client::call(ArgTypes... args)
 
     throw std::exception();
 }
-
