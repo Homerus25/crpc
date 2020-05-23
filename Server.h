@@ -48,14 +48,6 @@ namespace crpc
             std::apply(funcPtr, params);
         }
 
-        /*
-        static void stubNoReturnNoParamter(std::function<void(void)> funcPtr)
-        {
-            std::tuple<ArgumentTypes...> params = *(cista::deserialize<std::tuple<ArgumentTypes...>>(argsBuf));
-            std::apply(funcPtr, params);
-        }
-         */
-
     public:
         template<typename returnType>
         void registerFunction(std::function<returnType(void)> funcP)

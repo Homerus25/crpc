@@ -37,7 +37,6 @@ void crpc::Server::listenToClient(boost::asio::ip::tcp::socket& socket)
     for(;;) {
 
         size_t len = socket.read_some(boost::asio::buffer(buffer), error);
-        //size_t len = boost::asio::read(socket, boost::asio::buffer(buffer), error);
         if(error) {
             std::cout << "error while reading!\n";
             //throw boost::system::system_error(error);
