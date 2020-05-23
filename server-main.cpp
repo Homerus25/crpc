@@ -20,6 +20,11 @@ void print(cista::offset::string str)
     std::cout << str << "\n";
 }
 
+void printNoArgs()
+{
+    std::cout << "print with no args!\n";
+}
+
 int main(int argc, char* argv[])
 {
     crpc::Server server(2000);
@@ -34,6 +39,9 @@ int main(int argc, char* argv[])
 
     std::function<void(cista::offset::string)> func3 = print;
     server.registerFunctionNoReturn<cista::offset::string>(func3);
+
+    std::function<void(void)> func4 = printNoArgs;
+    server.registerFunctionNoReturnNoParameter(func4);
 
 
     server.run();

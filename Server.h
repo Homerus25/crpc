@@ -48,6 +48,14 @@ namespace crpc
             std::apply(funcPtr, params);
         }
 
+        /*
+        static void stubNoReturnNoParamter(std::function<void(void)> funcPtr)
+        {
+            std::tuple<ArgumentTypes...> params = *(cista::deserialize<std::tuple<ArgumentTypes...>>(argsBuf));
+            std::apply(funcPtr, params);
+        }
+         */
+
     public:
         template<typename returnType>
         void registerFunction(std::function<returnType(void)> funcP)
@@ -58,13 +66,18 @@ namespace crpc
         template<typename returnType, class ...ArgTypes>
         void registerFunctionArgs(std::function<returnType(ArgTypes...)>& funcP)
         {
-            funcs.push_back([&, funcP] () { return stub<returnType, ArgTypes...>(funcP, params); });
+            funcs.emplace_back([&, funcP] () { return stub<returnType, ArgTypes...>(funcP, params); });
         }
 
         template<class ...ArgTypes>
         void registerFunctionNoReturn(std::function<void(ArgTypes...)>& funcP)
         {
-            funcs.push_back([&, funcP] () { stubNoReturn(funcP, params); return std::vector<unsigned char>(); });
+            funcs.emplace_back([&, funcP] () { stubNoReturn(funcP, params); return std::vector<unsigned char>(); });
+        }
+
+        void registerFunctionNoReturnNoParameter(std::function<void(void)>& funcP)
+        {
+            funcs.emplace_back([&, funcP] () { funcP(); return std::vector<unsigned char>(); });
         }
 
     };

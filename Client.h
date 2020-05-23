@@ -18,6 +18,9 @@ namespace crpc
         template<int procName, class ...ArgTypes>
         void callNoReturn(ArgTypes...);
 
+        template<int procName>
+        void callNoReturnNoArgs();
+
     private:
         boost::asio::io_context io;
         boost::asio::ip::tcp::endpoint endpoints;//(boost::asio::ip::address::from_string(host), 2000);
@@ -98,6 +101,22 @@ void crpc::Client::callNoReturn(ArgTypes... args)
 {
     std::vector<unsigned char> bu;
     bu = serialize(procName, args...);
+
+    //socket.write_some(boost::asio::buffer(bu), error);
+    write(socket, boost::asio::buffer(bu), error);
+
+    if (error == boost::asio::error::eof)
+        return;
+    else if (error)
+        throw boost::system::system_error(error); // Some other error.
+}
+
+
+template<int procName>
+void crpc::Client::callNoReturnNoArgs()
+{
+    std::vector<unsigned char> bu;
+    bu = serialize(procName);
 
     //socket.write_some(boost::asio::buffer(bu), error);
     write(socket, boost::asio::buffer(bu), error);

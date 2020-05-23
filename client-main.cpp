@@ -14,5 +14,7 @@ int main(int argc, char* argv[])
 
     client.callNoReturn<2>(cista::raw::string("hi"));
 
+    client.callNoReturnNoArgs<3>();
+
     return 0;
 }
