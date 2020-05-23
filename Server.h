@@ -5,20 +5,6 @@
 
 namespace crpc
 {
-    template<typename RetType>
-    std::vector<unsigned char> stub(std::function<RetType(void)> funcPtr)
-    {
-        auto ret = funcPtr();
-        return cista::serialize(ret);
-    }
-
-    template<typename RetType, class ...ArgumentTypes>
-    std::vector<unsigned char> stubArgs(std::function<RetType(ArgumentTypes...)> funcPtr, std::vector<unsigned char> argsBuf)
-    {
-        std::tuple<ArgumentTypes...> params = *(cista::deserialize<std::tuple<ArgumentTypes...>>(argsBuf));
-        RetType ret = std::apply(funcPtr, params);
-        return cista::serialize(ret);
-    }
 
     class Server {
     public:
@@ -36,24 +22,50 @@ namespace crpc
         std::vector<char> buffer;
         std::vector<unsigned char> params;
 
+    private:
+        void listenToClient(boost::asio::ip::tcp::socket&);
+
+    private:
+        template<typename RetType>
+        static std::vector<unsigned char> stubNoArguments(std::function<RetType(void)> funcPtr)
+        {
+            auto ret = funcPtr();
+            return cista::serialize(ret);
+        }
+
+        template<typename RetType, class ...ArgumentTypes>
+        static std::vector<unsigned char> stub(std::function<RetType(ArgumentTypes...)> funcPtr, std::vector<unsigned char> argsBuf)
+        {
+            std::tuple<ArgumentTypes...> params = *(cista::deserialize<std::tuple<ArgumentTypes...>>(argsBuf));
+            RetType ret = std::apply(funcPtr, params);
+            return cista::serialize(ret);
+        }
+
+        template<class ...ArgumentTypes>
+        static void stubNoReturn(std::function<void(ArgumentTypes...)> funcPtr, std::vector<unsigned char> argsBuf)
+        {
+            std::tuple<ArgumentTypes...> params = *(cista::deserialize<std::tuple<ArgumentTypes...>>(argsBuf));
+            std::apply(funcPtr, params);
+        }
+
     public:
-        template<typename retType>
-        void registerFunction(std::function<retType(void)> funcP)
+        template<typename returnType>
+        void registerFunction(std::function<returnType(void)> funcP)
         {
-            auto stubFunc = stub<retType>;
-
-            std::function<std::vector<unsigned char>(void)> f = [=] ()
-            {
-                return stubFunc(funcP);
-            };
-
-            funcs.emplace_back(f);
+            funcs.emplace_back([=] () { return stubNoArguments<returnType>(funcP); });
         }
 
-        template<typename retType, class ...ArgTypes>
-        void registerFunctionArgs(std::function<retType(ArgTypes...)>& funcP)
+        template<typename returnType, class ...ArgTypes>
+        void registerFunctionArgs(std::function<returnType(ArgTypes...)>& funcP)
         {
-            funcs.push_back([&, funcP] () { return stubArgs<retType, ArgTypes...>(funcP, params); });
+            funcs.push_back([&, funcP] () { return stub<returnType, ArgTypes...>(funcP, params); });
         }
+
+        template<class ...ArgTypes>
+        void registerFunctionNoReturn(std::function<void(ArgTypes...)>& funcP)
+        {
+            funcs.push_back([&, funcP] () { stubNoReturn(funcP, params); return std::vector<unsigned char>(); });
+        }
+
     };
 }

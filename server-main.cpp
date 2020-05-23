@@ -15,6 +15,11 @@ int addTwoNums(int a, int b)
     return a + b;
 }
 
+void print(cista::offset::string str)
+{
+    std::cout << str << "\n";
+}
+
 int main(int argc, char* argv[])
 {
     crpc::Server server(2000);
@@ -26,6 +31,9 @@ int main(int argc, char* argv[])
     std::function<int(int, int)> func2 = addTwoNums;
     server.registerFunctionArgs<int, int, int>(func2);
     //server.registerFunctionArgs<int, int, int>(addTwoNums);
+
+    std::function<void(cista::offset::string)> func3 = print;
+    server.registerFunctionNoReturn<cista::offset::string>(func3);
 
 
     server.run();

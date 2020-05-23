@@ -10,10 +10,13 @@ namespace crpc
         Client(const std::string& name, unsigned int port);
 
         template<int procName, typename resultType>
-        resultType call();
+        resultType callNoParameter();
 
         template<int procName, typename resultType, class ...ArgTypes>
         resultType call(ArgTypes...);
+
+        template<int procName, class ...ArgTypes>
+        void callNoReturn(ArgTypes...);
 
     private:
         boost::asio::io_context io;
@@ -21,6 +24,9 @@ namespace crpc
 
         std::vector<char> buffer;
         boost::system::error_code error;
+
+        boost::asio::ip::tcp::socket socket;//(io);
+        //socket.connect(endpoints);
 
         struct cInt { int a; };
 
@@ -51,55 +57,54 @@ namespace crpc
 }
 
 template<int procName, typename resultType>
-resultType crpc::Client::call()
+resultType crpc::Client::callNoParameter()
 {
-    boost::asio::ip::tcp::socket socket(io);
-    socket.connect(endpoints);
-
     std::vector<unsigned char> bu;
     cInt cint{procName};
     bu = cista::serialize(cint);
 
-    for(;;) {
-        socket.write_some(boost::asio::buffer(bu), error);
+    socket.write_some(boost::asio::buffer(bu), error); write(socket, boost::asio::buffer(bu), error);
+    size_t len = socket.read_some(boost::asio::buffer(buffer), error);
 
-        size_t len = socket.read_some(boost::asio::buffer(buffer), error);
+    if (error)
+        throw boost::system::system_error(error); // Some other error.
 
-        if (error == boost::asio::error::eof)
-            break; // Connection closed cleanly by peer.
-        else if (error)
-            throw boost::system::system_error(error); // Some other error.
 
-        resultType* deserial = cista::offset::deserialize<resultType>(buffer);
-        return *deserial;
-    }
-
-    throw std::exception();
+    resultType *deserial = cista::offset::deserialize<resultType>(buffer);
+    return *deserial;
 }
 
-
-template<int procName, typename resultType, class... ArgTypes>
+template<int procName, typename resultType, class ...ArgTypes>
 resultType crpc::Client::call(ArgTypes... args)
 {
-    boost::asio::ip::tcp::socket socket(io);
-    socket.connect(endpoints);
-
     std::vector<unsigned char> bu;
     bu = serialize(procName, args...);
 
-    for(;;) {
-        socket.write_some(boost::asio::buffer(bu), error);
+    //socket.write_some(boost::asio::buffer(bu), error);
+    write(socket, boost::asio::buffer(bu), error);
 
-        size_t len = socket.read_some(boost::asio::buffer(buffer), error);
+    size_t len = socket.read_some(boost::asio::buffer(buffer), error);
 
-        if (error == boost::asio::error::eof)
-            break; // Connection closed cleanly by peer.
-        else if (error)
-            throw boost::system::system_error(error); // Some other error.
+    if (error)
+        throw boost::system::system_error(error); // Some other error.
 
-        resultType* deserial = cista::offset::deserialize<resultType>(buffer);
-        return *deserial;
-    }
-
-    throw std::exception();
+    resultType *deserial = cista::offset::deserialize<resultType>(buffer);
+    return *deserial;
 }
+
+
+template<int procName, class... ArgTypes>
+void crpc::Client::callNoReturn(ArgTypes... args)
+{
+    std::vector<unsigned char> bu;
+    bu = serialize(procName, args...);
+
+    //socket.write_some(boost::asio::buffer(bu), error);
+    write(socket, boost::asio::buffer(bu), error);
+
+    if (error == boost::asio::error::eof)
+        return;
+    else if (error)
+        throw boost::system::system_error(error); // Some other error.
+}
+
