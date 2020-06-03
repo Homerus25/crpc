@@ -74,12 +74,6 @@ namespace crpc
             funcs.emplace_back([&, funcP] () { funcP(); return std::vector<unsigned char>(); });
         }
 
-        template<typename retT>
-        void reg(std::function<retT(&)>& func)
-        {
-            reg<retT,void>(func);
-        }
-
         template<typename retT, typename ... ArgsT>
         void reg(std::function<retT(ArgsT...)>& func)
         {
