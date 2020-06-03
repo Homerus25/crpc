@@ -12,6 +12,9 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 SET(USED_LIBS ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY})
 
+# remove later!
+add_definitions(-DBOOST_ASIO_DISABLE_CONCEPTS)
+
 add_executable(crpc-Server server-main.cpp Server.cpp)
 target_link_libraries(crpc-Server ${USED_LIBS})
 
