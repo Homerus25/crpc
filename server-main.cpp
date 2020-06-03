@@ -31,17 +31,28 @@ int main(int argc, char* argv[])
 
     //std::function<cista::offset::string(void)> func = make_daytime_string;
     //server.registerFunction<cista::offset::string>(func);
-    server.registerFunction<cista::offset::string>(make_daytime_string);
+    //server.registerFunction<cista::offset::string>(make_daytime_string);
+    //server.reg<cista::offset::string(void)>(make_daytime_string);
+
+    std::function<cista::offset::string(void)> func = make_daytime_string;
+    //server.reg<std::function<cista::offset::string(void)>>(func);
+    server.reg(func);
+    //server.reg<cista::offset::string, void>(make_daytime_string);
+    //server.reg(&(std::function<cista::offset::string(void)>{make_daytime_string}));
 
     std::function<int(int, int)> func2 = addTwoNums;
-    server.registerFunctionArgs<int, int, int>(func2);
+    //server.registerFunctionArgs<int, int, int>(func2);
+    server.reg(func2);
     //server.registerFunctionArgs<int, int, int>(addTwoNums);
 
     std::function<void(cista::offset::string)> func3 = print;
-    server.registerFunctionNoReturn<cista::offset::string>(func3);
+    server.reg(func3);
+    //server.registerFunctionNoReturn<cista::offset::string>(func3);
 
     std::function<void(void)> func4 = printNoArgs;
-    server.registerFunctionNoReturnNoParameter(func4);
+    //server.registerFunctionNoReturnNoParameter(func4);
+    server.reg(func4);
+    //server.reg(printNoArgs);
 
 
     server.run();

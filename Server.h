@@ -2,10 +2,12 @@
 
 #include <boost/asio.hpp>
 #include "cista.h"
+#include <functional>
+#include <vector>
+#include <type_traits>
 
 namespace crpc
 {
-
     class Server {
     public:
         explicit Server(unsigned int port);
@@ -50,7 +52,7 @@ namespace crpc
 
     public:
         template<typename returnType>
-        void registerFunction(std::function<returnType(void)> funcP)
+        void registerFunctionNoArgs(std::function<returnType(void)> funcP)
         {
             funcs.emplace_back([=] () { return stubNoArguments<returnType>(funcP); });
         }
@@ -72,5 +74,25 @@ namespace crpc
             funcs.emplace_back([&, funcP] () { funcP(); return std::vector<unsigned char>(); });
         }
 
+        template<typename retT>
+        void reg(std::function<retT(&)>& func)
+        {
+            reg<retT,void>(func);
+        }
+
+        template<typename retT, typename ... ArgsT>
+        void reg(std::function<retT(ArgsT...)>& func)
+        {
+            if constexpr (std::is_void_v<retT> && sizeof...(ArgsT) == 0)
+                registerFunctionNoReturnNoParameter(func);
+            else if constexpr(std::is_void_v<retT> && sizeof...(ArgsT) > 0)
+                registerFunctionNoReturn(func);
+            else if constexpr(!std::is_void_v<retT> && sizeof...(ArgsT) == 0)
+                registerFunctionNoArgs(func);
+            else if constexpr(!std::is_void_v<retT> && sizeof...(ArgsT) > 0)
+                registerFunctionArgs(func);
+            else
+                static_assert("No valid registration!");
+        }
     };
 }
