@@ -24,35 +24,24 @@ namespace crpc
 
         template<int procName, typename retT, typename ... ArgsT>
         struct fn{
-            fn(Client* c) : cl(c) {}
-
-            Client* cl;
-
             retT operator()(ArgsT... args)
             {
                 if constexpr (!std::is_void_v<retT> && sizeof...(ArgsT) > 0)
-                    return cl->call<procName, retT, ArgsT...>(args...);
-                else if constexpr (!std::is_void_v<retT> && sizeof...(ArgsT) == 0)
-                    return cl->callNoParameter<procName, retT>();
+                    return self->call<procName, retT, ArgsT...>(args...);
+                else  if constexpr (!std::is_void_v<retT> && sizeof...(ArgsT) == 0)
+                    return self->callNoParameter<procName, retT>();
                 else if constexpr (std::is_void_v<retT> && sizeof...(ArgsT) > 0)
-                    cl->callNoReturn<procName, ArgsT...>(args...);
+                    self->callNoReturn<procName, ArgsT...>(args...);
                 else if constexpr (std::is_void_v<retT> && sizeof...(ArgsT) == 0)
-                    cl->callNoReturnNoArgs<procName>();
+                    self->callNoReturnNoArgs<procName>();
                 else
                     static_assert("No valid call!");
             }
         };
 
-        /*
-        template<int procName, typename retT, typename ... ArgsT>
-        retT fn(ArgsT... args)
-        {
-            if constexpr (sizeof...(ArgsT) == 0)
-                call<procName, retT, ArgsT...>(args...);
-        }
-         */
 
     protected:
+        static Client* self;
         boost::asio::io_context io;
         boost::asio::ip::tcp::endpoint endpoints;
 

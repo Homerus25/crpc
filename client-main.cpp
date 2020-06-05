@@ -5,10 +5,6 @@
 struct CustomClient : public crpc::Client {
     explicit CustomClient(const std::string& name, unsigned int port)
         : Client(name, port)
-        , make_daytime_string(this)
-        , addTwoNums(this)
-        , print(this)
-        , printNoArgs(this)
     {}
 
     crpc::Client::fn<0, cista::raw::string> make_daytime_string;
