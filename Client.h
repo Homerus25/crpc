@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/asio.hpp>
+#include <iostream>
 #include "cista.h"
 
 namespace crpc
@@ -21,7 +22,37 @@ namespace crpc
         template<int procName>
         void callNoReturnNoArgs();
 
-    private:
+        template<int procName, typename retT, typename ... ArgsT>
+        struct fn{
+            fn(Client* c) : cl(c) {}
+
+            Client* cl;
+
+            retT operator()(ArgsT... args)
+            {
+                if constexpr (!std::is_void_v<retT> && sizeof...(ArgsT) > 0)
+                    return cl->call<procName, retT, ArgsT...>(args...);
+                else if constexpr (!std::is_void_v<retT> && sizeof...(ArgsT) == 0)
+                    return cl->callNoParameter<procName, retT>();
+                else if constexpr (std::is_void_v<retT> && sizeof...(ArgsT) > 0)
+                    cl->callNoReturn<procName, ArgsT...>(args...);
+                else if constexpr (std::is_void_v<retT> && sizeof...(ArgsT) == 0)
+                    cl->callNoReturnNoArgs<procName>();
+                else
+                    static_assert("No valid call!");
+            }
+        };
+
+        /*
+        template<int procName, typename retT, typename ... ArgsT>
+        retT fn(ArgsT... args)
+        {
+            if constexpr (sizeof...(ArgsT) == 0)
+                call<procName, retT, ArgsT...>(args...);
+        }
+         */
+
+    protected:
         boost::asio::io_context io;
         boost::asio::ip::tcp::endpoint endpoints;
 
