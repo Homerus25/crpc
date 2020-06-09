@@ -40,8 +40,12 @@ size_t index_of_member(fn<ReturnType, Args...> Interface::*const member_ptr) {
   auto i = 0U, field_index = std::numeric_limits<unsigned>::max();
   Interface interface{};
   cista::for_each_field(interface, [&](auto&& m) {
-    if constexpr (std::is_same_v<decltype(&m),
-                                 decltype(&(interface.*member_ptr))>) {
+    if constexpr (
+        std::is_same_v<
+            decltype(&m),
+            decltype(
+                &(interface.*
+                  member_ptr))>) {  // NOLINT(bugprone-suspicious-semicolon)
       if (&m == &(interface.*member_ptr)) {
         field_index = i;
       }
@@ -106,7 +110,9 @@ struct client : public Transport {
       response = Transport::send(index_of_member(member_ptr),
                                  cista::serialize(params));
     }
-    if constexpr (!std::is_same_v<ReturnType, void>) {
+    if constexpr (!std::is_same_v<
+                      ReturnType,
+                      void>) {  // NOLINT(bugprone-suspicious-semicolon)
       return *cista::deserialize<ReturnType>(response);
     }
   }
@@ -125,7 +131,7 @@ struct stub_transport {
 };
 
 template <typename Interface>
-stub_transport(server<Interface>& s)->stub_transport<Interface>;
+stub_transport(server<Interface>& s) -> stub_transport<Interface>;
 
 template <typename Interface>
 using stub_client = client<stub_transport<Interface>, Interface>;
