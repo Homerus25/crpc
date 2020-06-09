@@ -57,10 +57,6 @@ jobs:
             ldflags: -lc++abi
     env:
       BOOST_ROOT: /usr/local/share/boost/1.72.0
-      BUILDCACHE_COMPRESS: true
-      BUILDCACHE_ACCURACY: SLOPPY
-      BUILDCACHE_LUA_PATH: ${{ github.workspace }}/tools
-      BUILDCACHE_DIR: ${{ github.workspace }}/.buildcache
       UBSAN_OPTIONS: halt_on_error=1:abort_on_error=1
     steps:
       - uses: actions/checkout@v2
@@ -80,15 +76,6 @@ jobs:
         run: sudo apt-get install -y --no-install-recommends valgrind
 
       # ==== CACHING ====
-      - name: buildcache Cache
-        uses: actions/cache@v1.1.2
-        with:
-          path: ${{ github.workspace }}/.buildcache
-          key: buildcache-linux-${{ matrix.config.cc }}-${{ matrix.config.mode }}-${{ contains(matrix.config.cxxflags, 'sanitize') }}-${{ matrix.config.lint }}-${{ hashFiles('.pkg') }}-${{ hashFiles('**/*.h') }}-${{ hashFiles('**/*.cc') }}
-          restore-keys: |
-            buildcache-linux-${{ matrix.config.cc }}-${{ matrix.config.mode }}-${{ contains(matrix.config.cxxflags, 'sanitize') }}-${{ matrix.config.lint }}-${{ hashFiles('.pkg') }}-${{ hashFiles('**/*.h') }}-
-            buildcache-linux-${{ matrix.config.cc }}-${{ matrix.config.mode }}-${{ contains(matrix.config.cxxflags, 'sanitize') }}-${{ matrix.config.lint }}-${{ hashFiles('.pkg') }}-
-            buildcache-linux-${{ matrix.config.cc }}-${{ matrix.config.mode }}-${{ contains(matrix.config.cxxflags, 'sanitize') }}-${{ matrix.config.lint }}-
       - name: Dependencies Cache
         uses: actions/cache@v1.1.2
         with:
@@ -139,10 +126,7 @@ jobs:
             -DCTX_ASAN=${{ contains(matrix.config.cxxflags, '-fsanitize=address') }} \
             -DCTX_VALGRIND=${{ matrix.config.cc == 'gcc-9' && matrix.config.mode == 'Debug' }}
       - name: Build
-        run: |
-          ./build/bin/buildcache -z
-          cmake --build build --target crpc-test crpc-example-server crpc-example-client
-          ./build/bin/buildcache -s
+        run: cmake --build build --target crpc-test crpc-example-server crpc-example-client
 
       # ==== TESTS ====
       - name: Run Tests
