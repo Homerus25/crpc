@@ -16,42 +16,41 @@ struct server {
   void run();
   void test();
 
-  template <typename returnType>
-  void register_function_no_args(std::function<returnType(void)> funcP) {
-    funcs_.emplace_back([=]() { return stub_no_arguments<returnType>(funcP); });
+  template <typename ReturnType>
+  void register_function_no_args(std::function<ReturnType(void)> f) {
+    funcs_.emplace_back([f]() { return stub_no_arguments<ReturnType>(f); });
   }
 
-  template <typename returnType, class... ArgTypes>
-  void register_function_args(std::function<returnType(ArgTypes...)>& funcP) {
+  template <typename ReturnType, typename... ArgTypes>
+  void register_function_args(std::function<ReturnType(ArgTypes...)>& f) {
     funcs_.emplace_back(
-        [&, funcP]() { return stub<returnType, ArgTypes...>(funcP, params_); });
+        [f, this]() { return stub<ReturnType, ArgTypes...>(f, params_); });
   }
 
-  template <class... ArgTypes>
-  void register_function_no_return(std::function<void(ArgTypes...)>& funcP) {
-    funcs_.emplace_back([&, funcP]() {
-      stub_no_return(funcP, params_);
+  template <typename... ArgTypes>
+  void register_function_no_return(std::function<void(ArgTypes...)>& f) {
+    funcs_.emplace_back([this, f]() {
+      stub_no_return(f, params_);
       return std::vector<unsigned char>();
     });
   }
 
-  void register_function_no_return_no_parameter(
-      std::function<void(void)>& funcP) {
-    funcs_.emplace_back([&, funcP]() {
-      funcP();
+  void register_function_no_return_no_parameter(std::function<void(void)>& f) {
+    funcs_.emplace_back([f]() {
+      f();
       return std::vector<unsigned char>();
     });
   }
 
-  template <typename retT, typename... ArgsT>
-  void reg(std::function<retT(ArgsT...)>& func) {
-    if constexpr (std::is_void_v<retT> && sizeof...(ArgsT) == 0) {
+  template <typename RetT, typename... ArgsT>
+  void reg(std::function<RetT(ArgsT...)>& func) {
+    if constexpr (std::is_void_v<RetT> && sizeof...(ArgsT) == 0) {
       register_function_no_return_no_parameter(func);
-    } else if constexpr (std::is_void_v<retT> && sizeof...(ArgsT) > 0) {
+    } else if constexpr (std::is_void_v<RetT> && sizeof...(ArgsT) > 0) {
       register_function_no_return(func);
-    } else if constexpr (!std::is_void_v<retT> && sizeof...(ArgsT) == 0) {
+    } else if constexpr (!std::is_void_v<RetT> && sizeof...(ArgsT) == 0) {
       register_function_no_args(func);
-    } else if constexpr (!std::is_void_v<retT> && sizeof...(ArgsT) > 0) {
+    } else if constexpr (!std::is_void_v<RetT> && sizeof...(ArgsT) > 0) {
       register_function_args(func);
     } else {
       static_assert("No valid registration!");
@@ -63,27 +62,25 @@ private:
 
   template <typename RetType>
   static std::vector<unsigned char> stub_no_arguments(
-      std::function<RetType(void)> funcPtr) {
-    auto ret = funcPtr();
+      std::function<RetType(void)> f) {
+    auto const ret = f();
     return cista::serialize(ret);
   }
 
-  template <typename RetType, class... ArgumentTypes>
+  template <typename RetType, typename... ArgumentTypes>
   static std::vector<unsigned char> stub(
-      std::function<RetType(ArgumentTypes...)> funcPtr,
+      std::function<RetType(ArgumentTypes...)> f,
       std::vector<unsigned char> args_buf) {
-    auto const params =
-        *(cista::deserialize<std::tuple<ArgumentTypes...>>(args_buf));
-    RetType ret = std::apply(funcPtr, params);
+    auto const ret = std::apply(
+        f, *(cista::deserialize<std::tuple<ArgumentTypes...>>(args_buf)));
     return cista::serialize(ret);
   }
 
-  template <class... ArgumentTypes>
-  static void stub_no_return(std::function<void(ArgumentTypes...)> func_ptr,
+  template <typename... ArgumentTypes>
+  static void stub_no_return(std::function<void(ArgumentTypes...)> f,
                              std::vector<unsigned char> args_buf) {
-    auto const params =
-        *(cista::deserialize<std::tuple<ArgumentTypes...>>(args_buf));
-    std::apply(func_ptr, params);
+    std::apply(f,
+               *(cista::deserialize<std::tuple<ArgumentTypes...>>(args_buf)));
   }
 
   boost::asio::io_context io_;

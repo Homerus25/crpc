@@ -11,17 +11,35 @@ namespace crpc {
 struct client {
   client(std::string const& name, unsigned int port);
 
-  template <int procName, typename resultType>
-  resultType call_no_parameter();
+  template <int ProcName, typename ResultType>
+  ResultType call_no_parameter() {
+    std::vector<unsigned char> bu = serialize(ProcName);
+    write(socket_, boost::asio::buffer(bu));
 
-  template <int procName, typename resultType, class... ArgTypes>
-  resultType call(ArgTypes...);
+    socket_.read_some(boost::asio::buffer(buffer_));
+    return *cista::offset::deserialize<ResultType>(buffer_);
+  }
 
-  template <int procName, class... ArgTypes>
-  void call_no_return(ArgTypes...);
+  template <int ProcName, typename ResultType, class... ArgTypes>
+  ResultType call(ArgTypes... args) {
+    std::vector<unsigned char> bu = serialize(ProcName, args...);
+    write(socket_, boost::asio::buffer(bu));
 
-  template <int procName>
-  void call_no_return_args();
+    socket_.read_some(boost::asio::buffer(buffer_));
+    return *cista::offset::deserialize<ResultType>(buffer_);
+  }
+
+  template <int ProcName, class... ArgTypes>
+  void call_no_return(ArgTypes... args) {
+    auto const bu = serialize(ProcName, std::forward<ArgTypes>(args)...);
+    write(socket_, boost::asio::buffer(bu));
+  }
+
+  template <int ProcName>
+  void call_no_return_args() {
+    std::vector<unsigned char> bu = serialize(ProcName);
+    write(socket_, boost::asio::buffer(bu));
+  }
 
   template <int ProcName, typename RetT, typename... ArgsT>
   struct fn {
@@ -50,10 +68,6 @@ protected:
 
   boost::asio::ip::tcp::socket socket_{io_};
 
-  struct c_int {
-    int a;
-  };
-
   template <typename T>
   void append_vector(std::vector<T>& a, std::vector<T>& b) {
     auto offset = a.size();
@@ -75,35 +89,5 @@ protected:
     return buf;
   }
 };
-
-template <int ProcName, typename ResultType>
-ResultType client::call_no_parameter() {
-  std::vector<unsigned char> bu = serialize(ProcName);
-  write(socket_, boost::asio::buffer(bu));
-
-  socket_.read_some(boost::asio::buffer(buffer_));
-  return *cista::offset::deserialize<ResultType>(buffer_);
-}
-
-template <int ProcName, typename ResultType, class... ArgTypes>
-ResultType client::call(ArgTypes... args) {
-  std::vector<unsigned char> bu = serialize(ProcName, args...);
-  write(socket_, boost::asio::buffer(bu));
-
-  socket_.read_some(boost::asio::buffer(buffer_));
-  return *cista::offset::deserialize<ResultType>(buffer_);
-}
-
-template <int ProcName, class... ArgTypes>
-void client::call_no_return(ArgTypes... args) {
-  auto const bu = serialize(ProcName, std::forward<ArgTypes>(args)...);
-  write(socket_, boost::asio::buffer(bu));
-}
-
-template <int ProcName>
-void client::call_no_return_args() {
-  std::vector<unsigned char> bu = serialize(ProcName);
-  write(socket_, boost::asio::buffer(bu));
-}
 
 }  // namespace crpc
