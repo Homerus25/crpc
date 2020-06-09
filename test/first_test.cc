@@ -10,7 +10,7 @@
 #include "cista/reflection/arity.h"
 #include "cista/serialization.h"
 
-namespace std {
+namespace std {  // NOLINT
 
 template <typename Ctx, typename... T>
 void serialize(Ctx& c, std::tuple<T...> const* origin,
@@ -38,7 +38,7 @@ struct fn {};
 template <typename Interface, typename ReturnType, typename... Args>
 size_t index_of_member(fn<ReturnType, Args...> Interface::*const member_ptr) {
   auto i = 0U, field_index = std::numeric_limits<unsigned>::max();
-  Interface interface;
+  Interface interface{};
   cista::for_each_field(interface, [&](auto&& m) {
     if constexpr (std::is_same_v<decltype(&m),
                                  decltype(&(interface.*member_ptr))>) {
@@ -92,7 +92,8 @@ struct server {
 template <typename Transport, typename Interface>
 struct client : public Transport {
   template <typename... Args>
-  client(Args&&... args) : Transport{std::forward<Args...>(args...)} {}
+  client(Args&&... args)  // NOLINT
+      : Transport{std::forward<Args...>(args...)} {}
 
   template <typename ReturnType, typename... Args>
   ReturnType call(fn<ReturnType, Args...> Interface::*const member_ptr,
@@ -113,7 +114,7 @@ struct client : public Transport {
 
 template <typename Interface>
 struct stub_transport {
-  stub_transport(server<Interface>& s) : s_{s} {}
+  explicit stub_transport(server<Interface>& s) : s_{s} {}
 
   std::vector<unsigned char> send(unsigned fn_idx,
                                   std::vector<unsigned char> const& params) {
