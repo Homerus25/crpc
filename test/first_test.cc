@@ -125,7 +125,7 @@ struct stub_transport {
 };
 
 template <typename Interface>
-stub_transport(server<Interface>& s) -> stub_transport<Interface>;
+stub_transport(server<Interface>& s)->stub_transport<Interface>;
 
 template <typename Interface>
 using stub_client = client<stub_transport<Interface>, Interface>;
