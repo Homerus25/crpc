@@ -53,7 +53,7 @@ struct client {
       } else if constexpr (std::is_void_v<RetT> && sizeof...(ArgsT) == 0) {
         self_->call_no_return_args<ProcName>();
       } else {
-        static_assert("No valid call!");
+        static_assert("No valid message!");
       }
     }
   };

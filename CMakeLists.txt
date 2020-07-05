@@ -57,3 +57,6 @@ target_link_libraries(crpc-example-server crpc)
 add_executable(crpc-example-client example/client.cc)
 target_link_libraries(crpc-example-client crpc)
 
+add_executable(crpc-example-client-async example/async_client.cc)
+target_link_libraries(crpc-example-client-async crpc)
+
