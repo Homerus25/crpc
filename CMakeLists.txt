@@ -60,3 +60,8 @@ target_link_libraries(crpc-example-client crpc)
 add_executable(crpc-example-client-async example/async_client.cc)
 target_link_libraries(crpc-example-client-async crpc)
 
+add_executable(crpc-example-client-async-websocket example/async_websocket_client.cc)
+target_link_libraries(crpc-example-client-async-websocket crpc)
+
+add_executable(crpc-example-server-websocket example/websocket_server.cc)
+target_link_libraries(crpc-example-server-websocket crpc)

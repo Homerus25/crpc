@@ -23,3 +23,22 @@ namespace std {  // NOLINT
     }
 
 }  // namespace std
+
+struct Container {
+    explicit Container(unsigned char *d, size_t si)
+            : data{d}, size_{si} {}
+
+    unsigned char &operator[](size_t pos)
+    {
+        return data[pos];
+    }
+
+    size_t size()
+    {
+        return this->size_;
+    }
+
+private:
+    unsigned char* data;
+    size_t size_;
+};
