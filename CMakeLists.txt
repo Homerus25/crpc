@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.15)
 project(crpc)
 
+set(CMAKE_CXX_STANDARD 20)
+
 ################################
 # Dependencies
 ################################
@@ -11,7 +13,8 @@ if (MSVC)
   set(Boost_USE_MULTITHREADED ON)
   set(Boost_USE_STATIC_RUNTIME ON)
 endif()
-find_package(Boost 1.70.0 REQUIRED COMPONENTS system thread)
+
+find_package(Boost REQUIRED COMPONENTS system thread)
 find_package(Threads)
 
 link_directories(${Boost_LIBRARY_DIRS})
@@ -51,6 +54,8 @@ target_link_libraries(crpc-test doctest crpc)
 ################################
 # Example
 ################################
+#add_definitions(__clang__)
+
 add_executable(crpc-example-server example/server.cc)
 target_link_libraries(crpc-example-server crpc)
 
@@ -65,3 +70,19 @@ target_link_libraries(crpc-example-client-async-websocket crpc)
 
 add_executable(crpc-example-server-websocket example/websocket_server.cc)
 target_link_libraries(crpc-example-server-websocket crpc)
+
+###############################
+add_subdirectory(coroutines)
+
+link_directories(${Boost_LIBRARY_DIRS})
+include_directories(SYSTEM ${Boost_INCLUDE_DIR})
+add_definitions(-DBOOST_ASIO_DISABLE_CONCEPTS=1 -BOOST_ASIO_NO_DEPRECATED=1)  # fixes issue with Boost 1.72.0
+
+set(CMAKE_CXX_STANDARD 20)
+
+add_compile_options(-fcoroutines)
+
+add_executable(aiso-coroutines-server coroutines/main.cpp coroutines/app.cpp coroutines/connection.cpp coroutines/server.cpp)
+target_link_libraries(aiso-coroutines-server PUBLIC Boost::system crpc beast_fun_times::util -fcoroutines)
+
+target_link_options(aiso-coroutines-server PUBLIC -fcoroutines)

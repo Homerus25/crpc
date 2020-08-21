@@ -6,7 +6,6 @@
 #include <chrono>
 
 int main(int argc, char* argv[]) {
-
   auto server = rpc_asio_server<example_interface>{2000};
 
   int count = 0;

@@ -15,7 +15,7 @@ struct asio_transport {
     std::vector<unsigned char> send(unsigned fn_idx,
                                     std::vector<unsigned char> const& params) {
 
-        message ms{fn_idx, cista::offset::vector<unsigned char>(params.begin(), params.end())};
+        message ms{0, fn_idx, cista::offset::vector<unsigned char>(params.begin(), params.end())};
         write(socket_, boost::asio::buffer(cista::serialize(ms)));
 
         std::vector<unsigned char> buffer(1024);
