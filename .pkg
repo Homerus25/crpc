@@ -10,3 +10,7 @@
   url=git@github.com:motis-project/doctest.git
   branch=master
   commit=932a2ca50666138256dae56fbb16db3b1cae133a
+[net]
+  url=git@github.com:motis-project/net.git
+  branch=master
+  commit=ca08edddd8d2e7ad2ad1a53ede4d111b96733e17

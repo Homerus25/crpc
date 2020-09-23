@@ -18,10 +18,11 @@ find_package(Boost REQUIRED COMPONENTS system thread)
 find_package(Threads)
 
 link_directories(${Boost_LIBRARY_DIRS})
-include_directories(SYSTEM ${Boost_INCLUDE_DIR})
+include_directories(SYSTEM ${Boost_INCLUDE_DIR} deps/net/include)
 add_definitions(-DBOOST_ASIO_DISABLE_CONCEPTS=1)  # fixes issue with Boost 1.72.0
 
-include(cmake/pkg.cmake)
+#include(cmake/pkg.cmake)
+add_subdirectory(deps)
 
 
 ################################
@@ -65,13 +66,22 @@ target_link_libraries(crpc-example-client crpc)
 add_executable(crpc-example-client-async example/async_client.cc)
 target_link_libraries(crpc-example-client-async crpc)
 
-add_executable(crpc-example-client-async-websocket example/async_websocket_client.cc)
+add_executable(crpc-example-client-async-thread-websocket example/websocket_async_thread_client.cc)
+target_link_libraries(crpc-example-client-async-thread-websocket crpc)
+
+add_executable(crpc-example-server-async-thread-websocket example/websocket_async_thread_server.cc)
+target_link_libraries(crpc-example-server-async-thread-websocket crpc)
+
+add_executable(crpc-example-server-async-websocket example/websocket_async_server.cc)
+target_link_libraries(crpc-example-server-async-websocket crpc web-server)
+#target_compile_features(crpc-example-server-async-websocket INTERFACE cxx_std_17)
+
+add_executable(crpc-example-client-async-websocket example/websocket_async_client.cc src/ws_client.cpp)
 target_link_libraries(crpc-example-client-async-websocket crpc)
 
-add_executable(crpc-example-server-websocket example/websocket_server.cc)
-target_link_libraries(crpc-example-server-websocket crpc)
 
 ###############################
+if(FALSE)
 add_subdirectory(coroutines)
 
 link_directories(${Boost_LIBRARY_DIRS})
@@ -86,3 +96,4 @@ add_executable(aiso-coroutines-server coroutines/main.cpp coroutines/app.cpp cor
 target_link_libraries(aiso-coroutines-server PUBLIC Boost::system crpc beast_fun_times::util -fcoroutines)
 
 target_link_options(aiso-coroutines-server PUBLIC -fcoroutines)
+ENDIF()

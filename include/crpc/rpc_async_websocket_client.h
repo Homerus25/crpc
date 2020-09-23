@@ -4,28 +4,38 @@
 
 #include "message.h"
 #include "deserialize_helper.h"
-#include <boost/beast/websocket.hpp>
-#include "boost/asio.hpp"
 
-namespace beast = boost::beast;
-namespace net = boost::asio;
-namespace websocket = beast::websocket;
-using tcp = boost::asio::ip::tcp;
+#include "../ws_client.h"
+
+#include <ctx/ctx.h>
+#include <ctx/operation.h>
+
+struct dummy_data {
+    void transition(ctx::transition, ctx::op_id, ctx::op_id) {}
+};
 
 struct async_websocket_transport {
-    explicit async_websocket_transport(std::string const& name, unsigned int const port)
-            : endpoints_(boost::asio::ip::address::from_string(name), port)
-            , ticket_num_(0)
+    explicit async_websocket_transport(std::string const& name, std::string const& port,
+            std::function<void()> func)
+            : ticket_num_(0)
     {
-        ws.next_layer().connect(endpoints_);
+        ctx::scheduler<dummy_data> sched;
+        net_client_ = std::make_unique<net::ws_client>(sched.runner_.ios(), /*ssl_context,*/ name, port);
+        net_client_->on_msg([&](std::string const& s, bool const data) {
+            auto ms = cista::deserialize<message>(s);
+            tickets_.at(ms->ticket_).set_value(std::vector<unsigned char>(ms->payload_.begin(), ms->payload_.end()));
+        });
 
-        std::string host = name + ':' + std::to_string(port);
-        ws.handshake(host, "/");
+        net_client_->run([&](boost::system::error_code err) {
+            if(!err) {
+                sched.enqueue_io(dummy_data{}, [&] () {
+                    func();
+                    net_client_->stop();
+                }, ctx::op_id{});
+            }
+        });
 
-        ws.binary(true);
-
-        std::thread t(&async_websocket_transport::receive, this);
-        t.detach();
+        sched.run(1);
     }
 
     std::future<std::vector<unsigned char>> send(unsigned fn_idx,
@@ -37,30 +47,17 @@ struct async_websocket_transport {
         auto future = promise.get_future();
         tickets_.emplace(ms.ticket_, std::move(promise));
 
-        ws.write(boost::asio::buffer(cista::serialize(ms)));
+        auto const ms_buf = cista::serialize(ms);
+        auto const ms_string = std::string(begin(ms_buf), end(ms_buf));
+        net_client_->send(ms_string, true);
 
         return future;
     }
 
-    void receive() {
-        while(1) {
-            beast::flat_buffer buffer;
-            ws.read(buffer);
-
-            Container con(static_cast<unsigned char*>(buffer.data().data()), buffer.size());
-            auto ms = cista::deserialize<message>(con);
-            tickets_.at(ms->ticket_).set_value(std::vector<unsigned char>(ms->payload_.begin(), ms->payload_.end()));
-        }
-    }
-
 private:
-    boost::asio::io_context io_;
-    boost::asio::ip::tcp::endpoint endpoints_;
-
-    websocket::stream<tcp::socket> ws{io_};
-
     std::atomic<uint64_t> ticket_num_;
     cista::raw::hash_map<uint64_t, std::promise<std::vector<unsigned char>>> tickets_;
+    std::unique_ptr<net::ws_client> net_client_;
 };
 
 template<typename Interface>

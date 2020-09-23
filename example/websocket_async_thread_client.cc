@@ -1,10 +1,10 @@
 #include <iostream>
 
-#include "crpc/rpc_async_websocket_client.h"
+#include "crpc/rpc_async_thread_websocket_client.h"
 #include "example_interface.h"
 
 int main(int argc, char* argv[]) {
-    rpc_async_websocket_client<example_interface> client{std::string("127.0.0.1"), 2000u};
+    rpc_async_thread_websocket_client<example_interface> client{std::string("127.0.0.1"), 2000u};
 
     //auto res = client.call(&example_interface::add_, 5, 2);
     //std::cout << res() << "\n";

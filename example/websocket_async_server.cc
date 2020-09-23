@@ -1,4 +1,4 @@
-#include "crpc/rpc_websocket_server.h"
+#include "crpc/rpc_async_websocket_server.h"
 
 #include "example_interface.h"
 
@@ -7,7 +7,8 @@
 
 int main(int argc, char* argv[]) {
 
-    auto server = rpc_websocket_server<example_interface>{2000};
+    boost::asio::io_service ios;
+    auto server = rpc_async_websocket_server<example_interface>{ios, "0.0.0.0", "2000"};
 
     int count = 0;
 
@@ -17,6 +18,7 @@ int main(int argc, char* argv[]) {
     server.reg(&example_interface::get_count_, [&]() { return count; });
 
     server.run();
+    ios.run();
 
     return 0;
 }

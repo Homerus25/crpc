@@ -16,9 +16,9 @@ namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 template <typename Interface>
-class rpc_websocket_server : public rpc_server<Interface> {
+class rpc_async_thread_websocket_server : public rpc_server<Interface> {
 public:
-    explicit rpc_websocket_server(unsigned int port);
+    explicit rpc_async_thread_websocket_server(unsigned int port);
 
     void run();
 
@@ -31,7 +31,7 @@ private:
 };
 
 template <typename Interface>
-rpc_websocket_server<Interface>::rpc_websocket_server(unsigned int port)
+rpc_async_thread_websocket_server<Interface>::rpc_async_thread_websocket_server(unsigned int port)
         : io_{1}
         , acceptor_(io_, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(),
                                                         port))
@@ -39,20 +39,20 @@ rpc_websocket_server<Interface>::rpc_websocket_server(unsigned int port)
 }
 
 template<typename Interface>
-void rpc_websocket_server<Interface>::run()
+void rpc_async_thread_websocket_server<Interface>::run()
 {
     for(;;)
     {
         tcp::socket socket{io_};
         acceptor_.accept(socket);
 
-        std::thread t(std::bind(std::mem_fn(&rpc_websocket_server::listen_to_client), this, std::move(socket)));
+        std::thread t(std::bind(std::mem_fn(&rpc_async_thread_websocket_server::listen_to_client), this, std::move(socket)));
         t.detach();
     }
 }
 
 template<typename Interface>
-void rpc_websocket_server<Interface>::listen_to_client(tcp::socket& socket)
+void rpc_async_thread_websocket_server<Interface>::listen_to_client(tcp::socket& socket)
 {
     websocket::stream<tcp::socket> ws{std::move(socket)};
     ws.accept();
