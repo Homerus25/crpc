@@ -8,7 +8,7 @@
 #include "boost/asio.hpp"
 
 namespace beast = boost::beast;
-namespace net = boost::asio;
+//namespace net = boost::asio;
 namespace websocket = beast::websocket;
 using tcp = boost::asio::ip::tcp;
 

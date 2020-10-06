@@ -54,12 +54,15 @@ void rpc_async_thread_websocket_server<Interface>::run()
 template<typename Interface>
 void rpc_async_thread_websocket_server<Interface>::listen_to_client(tcp::socket& socket)
 {
+    try {
     websocket::stream<tcp::socket> ws{std::move(socket)};
     ws.accept();
     ws.binary(true);
 
     for(;;)
     {
+        if(!ws.is_open())
+            return;
         beast::flat_buffer buffer;
         ws.read(buffer);
 
@@ -68,13 +71,24 @@ void rpc_async_thread_websocket_server<Interface>::listen_to_client(tcp::socket&
 
         auto const func_num = c->fn_idx;
         if (func_num < this->fn_.size()) {
-            std::cout << "passed with function number: " << func_num << "!\n";
-            std::cout << "size: " << this->fn_.size() << "\n";
+            //std::cout << "passed with function number: " << func_num << "!\n";
+            //std::cout << "size: " << this->fn_.size() << "\n";
 
             auto const pload = this->call(func_num, std::vector<unsigned char>(c->payload_.begin(), c->payload_.end()));
             message ms{ c->ticket_, func_num, cista::offset::vector<unsigned char>(pload.begin(), pload.end()) };
             ws.write(boost::asio::buffer(cista::serialize(ms)));
         }
+    }
+    }
+    catch(beast::system_error const& se)
+    {
+        // This indicates that the session was closed
+        if(se.code() != websocket::error::closed)
+            std::cerr << "Error: " << se.code().message() << std::endl;
+    }
+    catch(std::exception const& e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
     }
 }
 

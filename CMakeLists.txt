@@ -80,6 +80,9 @@ add_executable(crpc-example-client-async-websocket example/websocket_async_clien
 target_link_libraries(crpc-example-client-async-websocket crpc)
 
 
+add_executable(crpc-client-benchmark example/client_benchmarks.cc src/ws_client.cpp)
+target_link_libraries(crpc-client-benchmark crpc)
+
 ###############################
 if(FALSE)
 add_subdirectory(coroutines)
