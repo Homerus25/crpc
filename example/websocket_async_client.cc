@@ -4,6 +4,7 @@
 #include "example_interface.h"
 
 int main(int argc, char* argv[]) {
+  /*
     rpc_async_websocket_client<example_interface> client{std::string("127.0.0.1"), "2000",
     [&] () {
         std::cout << client.call(&example_interface::add_, 5, 2)() << "\n";
@@ -12,6 +13,13 @@ int main(int argc, char* argv[]) {
         std::cout << client.call(&example_interface::get_count_)() << "\n";
     }
     };
+    */
 
-    return 0;
+    rpc_async_websocket_client<example_interface> client{std::string("127.0.0.1"), "2000",
+       [&] () {
+          example_run(client);
+        }
+    };
+
+  return 0;
 }

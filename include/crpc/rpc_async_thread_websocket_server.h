@@ -20,13 +20,13 @@ class rpc_async_thread_websocket_server : public rpc_server<Interface> {
 public:
     explicit rpc_async_thread_websocket_server(unsigned int port);
 
-    void run();
+    [[noreturn]] void run();
 
 private:
     net::io_context io_;
     boost::asio::ip::tcp::acceptor acceptor_;
 
-    void listen_to_client(tcp::socket&);
+    void listen_to_client(tcp::socket);
 
 };
 
@@ -39,20 +39,28 @@ rpc_async_thread_websocket_server<Interface>::rpc_async_thread_websocket_server(
 }
 
 template<typename Interface>
-void rpc_async_thread_websocket_server<Interface>::run()
+[[noreturn]] void rpc_async_thread_websocket_server<Interface>::run()
 {
     for(;;)
     {
         tcp::socket socket{io_};
         acceptor_.accept(socket);
 
-        std::thread t(std::bind(std::mem_fn(&rpc_async_thread_websocket_server::listen_to_client), this, std::move(socket)));
+        //std::thread t(std::bind(std::mem_fn(&rpc_async_thread_websocket_server::listen_to_client), this, std::move(socket)));
+        //std::thread t(std::bind(std::mem_fn(&rpc_async_thread_websocket_server::listen_to_client), this, &socket));
+        //listen_to_client(socket);
+        //std::bind(std::mem_fn(&rpc_async_thread_websocket_server<Interface>::listen_to_client), this, std::move(socket))();
+
+        //std::mem_fn(&rpc_async_thread_websocket_server<Interface>::listen_to_client)(this, std::move(socket));
+        //std::mem_fn(&rpc_async_thread_websocket_server<Interface>::listen_to_client)(this, socket);
+
+        std::thread t(std::mem_fn(&rpc_async_thread_websocket_server<Interface>::listen_to_client), this, std::move(socket));
         t.detach();
     }
 }
 
 template<typename Interface>
-void rpc_async_thread_websocket_server<Interface>::listen_to_client(tcp::socket& socket)
+void rpc_async_thread_websocket_server<Interface>::listen_to_client(tcp::socket socket)
 {
     try {
     websocket::stream<tcp::socket> ws{std::move(socket)};
@@ -73,6 +81,7 @@ void rpc_async_thread_websocket_server<Interface>::listen_to_client(tcp::socket&
         if (func_num < this->fn_.size()) {
             //std::cout << "passed with function number: " << func_num << "!\n";
             //std::cout << "size: " << this->fn_.size() << "\n";
+
 
             auto const pload = this->call(func_num, std::vector<unsigned char>(c->payload_.begin(), c->payload_.end()));
             message ms{ c->ticket_, func_num, cista::offset::vector<unsigned char>(pload.begin(), pload.end()) };
