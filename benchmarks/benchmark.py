@@ -2,9 +2,15 @@ import subprocess as sp
 import time
 
 #clientNames = ["ctx", "single-thread"]
-clientNames = ["single-thread", "ctx"]
-serverNames = clientNames
-clientNumber = 100
+
+#clientNames = ["single-thread", "ctx"]
+#serverNames = clientNames
+
+serverNames = ["single-thread", "ctx"]
+clientNames = ["ctx"]
+
+clientNumber = 5
+iteration_count = 1000
 
 #global client, server
 
@@ -23,16 +29,21 @@ with open("benmarkResults.csv", "w") as results:
             clients = []
             print("start client: " + clientName)
             for i in range(clientNumber):
-                clients.append(sp.Popen(["./benchmarks/" + clientName + "-client"], encoding="ascii", stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE))
+                clients.append(sp.Popen(["./benchmarks/" + clientName + "-client", "1", str(iteration_count)], encoding="ascii", stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE))
                 #client = sp.Popen(["./benchmarks/" + clientName + "-client"], stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE)
                 #client.stdin.write(bytes('s', "ascii"))
             
             outs = []
+            errors = []
             print("clients startet")
+            time.sleep(1)
+
+            startTime = time.time()
 
             for client in clients:
                 out, err = client.communicate('s')
                 outs.append(out)
+                errors.append(err)
 
             print("clients run")
 
@@ -41,15 +52,28 @@ with open("benmarkResults.csv", "w") as results:
                 #clients[i].stdin.flush()
 
 
-            time.sleep(5)
+            #time.sleep(5)
+
+            #for client in clients:
+                #client.check_returncode()
+            #    print(client.returncode)
+
+            for error in errors:
+                print(error)
 
             resTime = 0
+
+
+            for client in clients:
+                client.wait()
+
+            endTime = time.time()
 
             for out in outs:
                 while not out.isnumeric():
                     time.sleep(5)
                     print("sleep")
-                    print(out)
+                print(out)
                 resTime += int(out)
 
             #for i in range(clientNumber):
@@ -58,8 +82,10 @@ with open("benmarkResults.csv", "w") as results:
                 #tim = clients[i].stdout.readline()[0:-1]
                 #print(tim)
                 #resTime += int(tim)
+            
 
             results.write(str(resTime) + str(";"))
+            print("restime: " + str(endTime - startTime))
         
         server.kill()
         results.write("\n")

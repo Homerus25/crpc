@@ -54,6 +54,7 @@ void rpc_async_websocket_server<Interface>::run()
                                  }
                              }
                          });
+    web_server_.on_ws_open([](net::ws_session_ptr const& session, bool b){ std::cout << "open\n"; });
 
     boost::system::error_code ec;
     web_server_.init(host_, port_, ec);

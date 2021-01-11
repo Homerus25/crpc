@@ -14,7 +14,7 @@ if (MSVC)
   set(Boost_USE_STATIC_RUNTIME ON)
 endif()
 
-find_package(Boost REQUIRED COMPONENTS system thread)
+find_package(Boost REQUIRED COMPONENTS system thread coroutine REQUIRED)
 find_package(Threads)
 
 link_directories(${Boost_LIBRARY_DIRS})
