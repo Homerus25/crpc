@@ -11,9 +11,9 @@
 #include <iostream>
 
 template <typename Interface>
-class rpc_async_websocket_server : public rpc_server<Interface> {
+class rpc_async_websocket_net_server : public rpc_server<Interface> {
 public:
-    explicit rpc_async_websocket_server(boost::asio::io_service& ios, std::string host, std::string port)
+    explicit rpc_async_websocket_net_server(boost::asio::io_service& ios, std::string host, std::string port)
         : host_(std::move(host))
         , port_(std::move(port))
         , web_server_{ios}
@@ -27,7 +27,7 @@ private:
 };
 
 template<typename Interface>
-void rpc_async_websocket_server<Interface>::run()
+void rpc_async_websocket_net_server<Interface>::run()
 {
     web_server_.on_ws_msg([&](net::ws_session_ptr const& session,
                              std::string const& msg, net::ws_msg_type type)

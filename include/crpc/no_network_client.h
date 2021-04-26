@@ -15,9 +15,6 @@ struct no_network_transport {
     rpc_server<Interface>& s_;
 };
 
-//template <typename Interface>
-//no_network_transport(rpc_server<Interface>& s)->no_network_transport<Interface>;
-
 template <typename Interface>
 using no_network_client = rpc_client<no_network_transport<Interface>, Interface>;
 

@@ -46,14 +46,6 @@ template<typename Interface>
         tcp::socket socket{io_};
         acceptor_.accept(socket);
 
-        //std::thread t(std::bind(std::mem_fn(&rpc_async_thread_websocket_server::listen_to_client), this, std::move(socket)));
-        //std::thread t(std::bind(std::mem_fn(&rpc_async_thread_websocket_server::listen_to_client), this, &socket));
-        //listen_to_client(socket);
-        //std::bind(std::mem_fn(&rpc_async_thread_websocket_server<Interface>::listen_to_client), this, std::move(socket))();
-
-        //std::mem_fn(&rpc_async_thread_websocket_server<Interface>::listen_to_client)(this, std::move(socket));
-        //std::mem_fn(&rpc_async_thread_websocket_server<Interface>::listen_to_client)(this, socket);
-
         std::thread t(std::mem_fn(&rpc_async_thread_websocket_server<Interface>::listen_to_client), this, std::move(socket));
         t.detach();
     }
@@ -63,31 +55,27 @@ template<typename Interface>
 void rpc_async_thread_websocket_server<Interface>::listen_to_client(tcp::socket socket)
 {
     try {
-    websocket::stream<tcp::socket> ws{std::move(socket)};
-    ws.accept();
-    ws.binary(true);
+      websocket::stream<tcp::socket> ws{std::move(socket)};
+      ws.accept();
+      ws.binary(true);
 
-    for(;;)
-    {
-        if(!ws.is_open())
-            return;
-        beast::flat_buffer buffer;
-        ws.read(buffer);
+      for(;;)
+      {
+          if(!ws.is_open())
+              return;
+          beast::flat_buffer buffer;
+          ws.read(buffer);
 
-        Container con(static_cast<unsigned char*>(buffer.data().data()), buffer.size());
-        auto c = cista::deserialize<message>(con);
+          Container con(static_cast<unsigned char*>(buffer.data().data()), buffer.size());
+          auto c = cista::deserialize<message>(con);
 
-        auto const func_num = c->fn_idx;
-        if (func_num < this->fn_.size()) {
-            //std::cout << "passed with function number: " << func_num << "!\n";
-            //std::cout << "size: " << this->fn_.size() << "\n";
-
-
-            auto const pload = this->call(func_num, std::vector<unsigned char>(c->payload_.begin(), c->payload_.end()));
-            message ms{ c->ticket_, func_num, cista::offset::vector<unsigned char>(pload.begin(), pload.end()) };
-            ws.write(boost::asio::buffer(cista::serialize(ms)));
-        }
-    }
+          auto const func_num = c->fn_idx;
+          if (func_num < this->fn_.size()) {
+              auto const pload = this->call(func_num, std::vector<unsigned char>(c->payload_.begin(), c->payload_.end()));
+              message ms{ c->ticket_, func_num, cista::offset::vector<unsigned char>(pload.begin(), pload.end()) };
+              ws.write(boost::asio::buffer(cista::serialize(ms)));
+          }
+      }
     }
     catch(beast::system_error const& se)
     {

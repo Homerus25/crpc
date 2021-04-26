@@ -2,6 +2,7 @@
 
 #include "crpc/rpc_client.h"
 #include <vector>
+#include <iostream>
 
 namespace data = cista::offset;
 
@@ -13,13 +14,18 @@ struct benchmark_interface {
 };
 
 inline void wait_for_start_signal() {
+  //std::cout << "wait for signal" << std::endl;
   char unused;
   std::cin >> unused;
 }
 
 template<typename Server>
 void register_benchmark_interface(Server &server) {
-  server.reg(&benchmark_interface::say_hello, [](data::string ms){ return data::string(std::string("hello " + ms.str())); });
+  server.reg(&benchmark_interface::say_hello, [](data::string ms){
+    auto str = std::string("hello " + ms.str());
+    //std::cout << "send: " << str << "\n";
+    return data::string(str);
+  });
   server.reg(&benchmark_interface::average,
              [](const data::vector<double>& vec) {
                double avg = 0.;
@@ -52,9 +58,6 @@ void benchmark_run(Client& client, int times)
     results_send_rcv_large_data.emplace_back(client.call(&benchmark_interface::send_rcv_large_data, data::vector<char>(1000)));
   }
 
-  //for(auto& res : results)
-  //  res();
-
   for(int i = 0; i < times; ++i) {
     results_say_hello[i]();
     results_average[i]();
@@ -81,9 +84,11 @@ void benchmark_run_generic(std::function<ReturnType(ArgTypes...)> proc, int time
 
   for(int i = 0; i < times; ++i) {
     auto res = results[i]();
-      if (res != "hello peter")
+    //std::cout << "got: " << res << std::endl;
+    if (res != "hello peter")
       std::cerr << "invalid result!" << res << "\n";
   }
+  //std::cout << "finished!" << std::endl;
 
   auto end = std::chrono::high_resolution_clock::now();
   std::cout << duration_cast<std::chrono::milliseconds>(end - start).count();// << "\n";

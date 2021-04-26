@@ -6,12 +6,6 @@
 
 #include <iostream>
 
-/*
-struct c_int {
-    int a_;
-};
- */
-
 template <typename Interface>
 class rpc_asio_server : public rpc_server<Interface> {
 public:
@@ -52,7 +46,7 @@ void rpc_asio_server<Interface>::listen_to_client(boost::asio::ip::tcp::socket& 
             return;
         }
 
-        std::cout << "got a message: " << std::string_view(buffer_.data()) << "\n";
+       // std::cout << "got a message: " << std::string_view(buffer_.data()) << "\n";
 
         auto const c = cista::deserialize<message>(buffer_);
         auto const func_num = c->fn_idx;
@@ -63,18 +57,6 @@ void rpc_asio_server<Interface>::listen_to_client(boost::asio::ip::tcp::socket& 
             auto const pload = this->call(func_num, std::vector<unsigned char>(c->payload_.begin(), c->payload_.end()));
             message ms{ c->ticket_, func_num, cista::offset::vector<unsigned char>(pload.begin(), pload.end()) };
             error = send(socket, cista::serialize(ms));
-
-            /*
-            //auto const message = funcs_[func_num]();
-            auto const message = this->call(func_num, std::vector<unsigned char>(c->payload_.begin(), c->payload_.end()));
-            if (!message.empty())
-                error = send(socket, message);
-            else {
-                std::vector<unsigned char> tmp(1, 0);
-                error = send(socket, tmp);
-            }
-             */
-
         }
 
         if (error) {

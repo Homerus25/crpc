@@ -11,7 +11,6 @@ public:
             , ticket_num_(0)
     {
         socket_.connect(endpoints_);
-        //std::async(std::launch::async, &async_asio_transport::receive, this);
         std::thread t(&async_asio_transport::receive, this);
         t.detach();
     }
@@ -24,24 +23,10 @@ public:
         std::promise<std::vector<unsigned char>> promise;
         auto future = promise.get_future();
         tickets_.emplace(ms.ticket_, std::move(promise));
-        //return promise.get_future();
 
         write(socket_, boost::asio::buffer(cista::serialize(ms)));
 
         return future;
-
-        /*
-        std::vector<unsigned char> buffer(1024);
-        boost::system::error_code error;
-        socket_.read_some(boost::asio::buffer(buffer), error);
-
-        if(error) {
-            std::cerr << "error while reading\n";
-            throw boost::system::system_error(error);
-        }
-        return buffer;
-         */
-
     }
 
     void receive() {
@@ -56,11 +41,6 @@ public:
             }
 
             auto ms = cista::deserialize<message>(buffer);
-            /*
-            std::cout << "ms-size: " << ms_size << " ticket: " << ms->ticket_ << " tickets_.size:" << tickets_.size() <<  std::endl;// << "\n";
-            for(auto beg = tickets_.begin(); beg != tickets_.end(); ++beg)
-                std::cout << beg->first << "\n";
-                */
             tickets_.at(ms->ticket_).set_value(std::vector<unsigned char>(ms->payload_.begin(), ms->payload_.end()));
         }
     }

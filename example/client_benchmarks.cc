@@ -1,16 +1,17 @@
 #include "example_interface.h"
 
-#include "crpc/rpc_async_websocket_client.h"
 #include "crpc/rpc_async_thread_websocket_client.h"
+#include "crpc/rpc_async_websocket_net_client.h"
 
 #include <iostream>
 
 void bench_ctx()
 {
-    rpc_async_websocket_client<example_interface> client{std::string("127.0.0.1"), "2000",
-                                                         [&] () {
-                                                            example_run(client);
-                                                         }
+    rpc_async_websocket_client<example_interface> client{
+      std::string("127.0.0.1"), "2000",
+      [&] () {
+          example_run(client);
+      }
     };
 }
 
