@@ -62,7 +62,11 @@ benchsize = 5000
 result_ctx = bench("ctx-net", "ctx-net", clientNumber, iteration_count, benchsize)
 result_mqtt = bench("mqtt", "mqtt", clientNumber, iteration_count, benchsize)
 
-#print(result_ctx)
+merged_bench = result_mqtt.merge(result_ctx)
+#merged_bench.save("test.bench")
+
+#merged_bench = data.Collection()
+#merged_bench.load("test.bench")
 
 #graph.plot_single_implementation(result_ctx, "ctx-net")
-graph.plot_compare_implementations_scale_on_clients(result_ctx.merge(result_mqtt).filter_functionID(2))
+graph.plot_compare_implementations_scale_on_clients(merged_bench.filter_functionID(2))

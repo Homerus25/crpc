@@ -1,5 +1,5 @@
 import numpy as np
-
+import pickle
 
 class Collection:
     def __init__(self):
@@ -30,6 +30,13 @@ class Collection:
         newCollection.data.extend(other.data)
         return newCollection
 
+    def save(self, filename):
+        with open(filename, 'wb') as file:
+            pickle.dump(self.data, file, pickle.HIGHEST_PROTOCOL)
+
+    def load(self, filename):
+        with open(filename, 'rb') as file:
+            self.data = pickle.load(file)
 
 class DataSet:
     rtts = []
