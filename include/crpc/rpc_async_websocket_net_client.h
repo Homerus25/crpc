@@ -28,12 +28,17 @@ struct async_websocket_net_transport {
             ts_.setValue(ms->ticket_, ms->payload_);
         });
 
+      //net_client_->on_fail([](boost::system::error_code err) { std::cerr << "failed: " << err.message() << std::endl; });
+
         net_client_->run([&](boost::system::error_code err) {
             if(!err) {
                 sched.enqueue_io(dummy_data{}, [&] () {
                     func();
                     net_client_->stop();
                 }, ctx::op_id{});
+            }
+            else {
+              std::cerr << "Can not run! " << err.message() << std::endl;
             }
         });
 

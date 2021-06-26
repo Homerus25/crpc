@@ -97,10 +97,13 @@ target_link_libraries(crpc-client-benchmark crpc)
 #add_compile_definitions(crpc-client-mqtt "-lboost_log -lboost_filesystem -lboost_thread")
 #add_link_options(crpc-client-mqtt "-lboost_log -lboost_filesystem -lboost_thread")
 
+find_package(Threads REQUIRED)
+
 set(mqtt_cpp_iface_DIR mqtt_cpp)
 add_executable(crpc-client-mqtt example/mqtt-client.cpp include/crpc/rpc_mqtt_transport.h)
 target_include_directories(crpc-client-mqtt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/crpc/mqtt_cpp/include Boost )
 target_link_libraries(crpc-client-mqtt crpc Boost::log)
+#target_compile_options(crpc-client-mqtt PUBLIC "-pthread")
 
 add_executable(crpc-server-mqtt example/mqtt-server.cpp include/crpc/rpc_mqtt_transport.h)
 target_include_directories(crpc-server-mqtt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/crpc/mqtt_cpp/include Boost )

@@ -103,7 +103,8 @@ void rpc_mqtt_server<Interface>::run()
         // including close_handler and error_handler.
         ep.start_session(std::move(spep));
 
-        ep.set_disconnect_handler([](){ //std::cout << "disconneted!" << std::endl;
+        ep.set_disconnect_handler([](){
+          //std::cout << "disconneted!" << std::endl;
          });
         // set connection (lower than MQTT) level handlers
         ep.set_close_handler(
@@ -140,6 +141,7 @@ void rpc_mqtt_server<Interface>::run()
               std::cout << "[server] clean_session: " << std::boolalpha << clean_session << std::endl;
               std::cout << "[server] keep_alive   : " << keep_alive << std::endl;
                */
+              //std::cout << "client connected!" << std::endl;
               auto sp = wp.lock();
               BOOST_ASSERT(sp);
               connections.insert(sp);
@@ -164,6 +166,7 @@ void rpc_mqtt_server<Interface>::run()
               std::cout << "[server] contents: " << contents << std::endl;
               */
 
+              //std::cout << "published!" << std::endl;
 
               auto const req = cista::deserialize<message>(contents);
 
@@ -183,6 +186,8 @@ void rpc_mqtt_server<Interface>::run()
                 auto sp = wp.lock();
                 BOOST_ASSERT(sp);
                 sp->async_publish("topic1", std::string(begin(res_buf), end(res_buf)));
+                //sp->async_publish("crpc1", std::string(begin(res_buf), end(res_buf)));
+                //sp->async_publish(topic_name.to_string(), std::string(begin(res_buf), end(res_buf)));
               }
 
 
@@ -197,11 +202,14 @@ void rpc_mqtt_server<Interface>::run()
               res.reserve(entries.size());
               auto sp = wp.lock();
               BOOST_ASSERT(sp);
+              /*
               for (auto const& e : entries) {
                //std::cout << "[server] topic_filter: " << e.topic_filter  << " qos: " << e.subopts.get_qos() << std::endl;
                 res.emplace_back(MQTT_NS::qos_to_suback_return_code(e.subopts.get_qos()));
                 subs.emplace(std::move(e.topic_filter), sp, e.subopts.get_qos());
+                //subs.emplace(e.topic_filter, sp, e.subopts.get_qos());
               }
+               */
               sp->suback(packet_id, res);
               return true;
             }

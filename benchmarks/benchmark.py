@@ -1,89 +1,68 @@
 import subprocess as sp
 import time
 
-def bench(clientNames, serverNames, clientNumber, iteration_count, benchsize, resultName):
-    with open(resultName, "w") as results:
-        results.write("times;")
-        for clientName in clientNames:
-            results.write(clientName + ";")
-        results.write("\n")
+import graph
+import data
 
-        for serverName in serverNames:
-            print("start server: " + serverName)
-            server = sp.Popen(["./benchmarks/" + serverName + "-server"], encoding="ascii", stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE)
-            results.write(serverName + ";")
+def bench(clientName, serverName, clientNumbers, iteration_count, benchsize):
+    print("start server: " + serverName)
+    server = sp.Popen(["./benchmarks/" + serverName + "-server"], encoding="ascii", stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE)
 
-            for functionID in range(1, 5):
-                for clientName in clientNames:
-                    clients = []
-                    print("start client: " + clientName)
-                    startarray = ["./benchmarks/" + clientName + "-client", str(functionID), str(iteration_count)]#, str(benchsize)]
-                    if functionID > 1:
-                        startarray.append(str(benchsize))
-                    print(startarray)
-                    for i in range(clientNumber):
-                        #clients.append(sp.Popen(["./benchmarks/" + clientName + "-client", "1", str(iteration_count)], encoding="ascii", stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE))
-                        clients.append(sp.Popen(startarray, encoding="ascii", stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE))
+    #result_array = []
+    results = data.Collection()
 
-                        #client = sp.Popen(["./benchmarks/" + clientName + "-client"], stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE)
-                        #client.stdin.write(bytes('s', "ascii"))
+    for functionID in range(1, 3):#5):
+        #print("start client: " + clientName)
+        for clientNumber in clientNumbers:
+            startarray = ["./benchmarks/" + clientName + "-client", str(clientNumber), str(functionID), str(iteration_count)]#, str(benchsize)]
+            if functionID > 1:
+                startarray.append(str(benchsize))
+            print(startarray)
+            client = sp.Popen(startarray, encoding="ascii", stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE)
 
-                    outs = []
-                    errors = []
-                    print("clients startet")
-                    time.sleep(1)
+            print("clients started")
+            time.sleep(1)
 
-                    startTime = time.time()
+            startTime = time.time()
 
-                    for client in clients:
-                        out, err = client.communicate('s')
-                        outs.append(out)
-                        errors.append(err)
+            print("clients run")
+            client.wait()
 
-                    print("clients run")
+            # todo: improve error handling here
+            print(client.stderr.read())
 
-                    time.sleep(5)
-                    resTime = 0
+            endTime = time.time()
 
+            rtts_string = client.stdout.read().split()
+            rtts = []
+            for time_str in rtts_string:
+                rtts.append(int(time_str))
 
-                    for client in clients:
-                        client.wait()
+            #results.write(str(resTime) + str(";"))
+            #result_array.append(rtts)
+            #result_array.append(endTime - startTime)
+            dt = data.DataSet(rtts, clientName, functionID, iteration_count, benchsize, clientNumber)
+            results.add(dt)
+            #results.add(dt)
+            print("restime: " + str(endTime - startTime))
+            #print("restime: " + str(resTime))
 
-                    print("waited for all")
-
-                    for error in errors:
-                        print(error)
-
-                    endTime = time.time()
-
-                    for idx in range(len(outs)):
-                        out = outs[idx]
-                        if out.isnumeric():
-                            print(out)
-                            resTime += int(out)
-                        else:
-                            print("failed")
-                            print(out)
-                            print(errors[idx])
-                            if clients[idx].returncode == None:
-                                print("not terminated")
-                            else:
-                                print(clients[idx].returncode)
-
-                    results.write(str(resTime) + str(";"))
-                    print("restime: " + str(endTime - startTime))
-                    print("restime: " + str(resTime))
-            
-            server.kill()
-            results.write("\n")
+    server.kill()
+    #results.write("\n")
+    #return result_array
+    return results
 
 
-clientNumber = 200
+#clientNumber = [1, 2, 3, 5, 10, 20, 50, 75, 100]
+clientNumber = [1, 5, 20, 100]
 iteration_count = 100
-benchsize = 1000
+benchsize = 5000
+#benchsize = 262144
 
-serverNames = ["ctx-net"]
-clientNames = ["ctx-net"]
+result_ctx = bench("ctx-net", "ctx-net", clientNumber, iteration_count, benchsize)
+result_mqtt = bench("mqtt", "mqtt", clientNumber, iteration_count, benchsize)
 
-bench(clientNames, serverNames, clientNumber, iteration_count, benchsize, "ctx.csv")
-#bench(["mqtt"], ["mqtt"], clientNumber, iteration_count, benchsize, "mqtt.csv")
+#print(result_ctx)
+
+#graph.plot_single_implementation(result_ctx, "ctx-net")
+graph.plot_compare_implementations_scale_on_clients(result_ctx.merge(result_mqtt).filter_functionID(2))

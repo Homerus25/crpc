@@ -27,11 +27,14 @@ struct rpc_mqtt_transport {
             if (connack_return_code == mqtt::connect_return_code::accepted) {
               //mqtt_client->async_subscribe("topic1", mqtt::qos::at_most_once);
               mqtt_client->subscribe("topic1", mqtt::qos::at_most_once);
+              //std::cout << "subscribed!" << std::endl;
             }
             return true;
           });
 
-      mqtt_client->set_close_handler([] {});
+      mqtt_client->set_close_handler([] {
+        //std::cout << "closed!" << std::endl;
+      });
       mqtt_client->set_error_handler(
           [](boost::system::error_code const& ec) {
             std::cerr << "error occured: " << ec << std::endl;
@@ -55,7 +58,7 @@ struct rpc_mqtt_transport {
               mqtt::publish_options options, mqtt::buffer topic_name,
               mqtt::buffer contents) {
             //std::cout << "pub handler, topic: " << topic_name
-            //          << " content: " << contents << "\n";
+            //          << " content: " << contents << std::endl; //"\n";
 
             auto ms = cista::deserialize<message>(contents);
             ts_.setValue(ms->ticket_, ms->payload_);
@@ -75,11 +78,15 @@ struct rpc_mqtt_transport {
     auto const ms_buf = cista::serialize(ms);
     auto const ms_string = std::string(begin(ms_buf), end(ms_buf));
     mqtt_client->publish("topic1", ms_string);  //, mqtt::qos::at_most_once);
+    //mqtt_client->async_publish(MQTT_NS::allocate_buffer("rpc"), MQTT_NS::allocate_buffer(ms_string), MQTT_NS::qos::exactly_once,[](MQTT_NS::error_code){});
+    //mqtt_client->async_publish("rpc", ms_string, MQTT_NS::qos::exactly_once,[](MQTT_NS::error_code){});
+    //mqtt_client->async_publish("rpc", "test", MQTT_NS::qos::exactly_once,[](MQTT_NS::error_code){});
 
     return future;
   }
 
   ~rpc_mqtt_transport() {
+    mqtt_client->unsubscribe("topic1");
     mqtt_client->disconnect(std::chrono::seconds(1));
   }
 

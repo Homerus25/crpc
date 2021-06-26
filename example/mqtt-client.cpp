@@ -3,20 +3,30 @@
 #include "crpc/rpc_mqtt_transport.h"
 #include "crpc/rpc_mqtt_transport.h"
 
+#include "benchmark.h"
+
 int main(int argc, char* argv[]) {
 
-  boost::asio::io_context ioc;
+  auto parameter = parse_benchmark_parameters(argc, argv);
+  if(!parameter.has_value()) {
+    return 0;
+  }
 
-  boost::asio::post(ioc, [&]() {
-    rpc_mqtt_client<benchmark_interface> client{
-        ioc, std::string("localhost"), std::uint16_t(2000)};
-      get_benchmark_function(client, argc, argv)();
-  });
+  benchmark bench(parameter->clientCount, [&] {
+    boost::asio::io_context ioc;
 
-  std::thread t1([&](){ ioc.run(); });
+    boost::asio::post(ioc, [&]() {
+      rpc_mqtt_client<benchmark_interface> client{
+          ioc, std::string("localhost"), std::uint16_t(2000)};
+      get_benchmark_function(client, bench, *parameter)();
+    });
 
-  ioc.run();
-  t1.join();
+    std::thread t1([&](){ ioc.run(); });
+
+    ioc.run();
+    t1.join();
+  }
+ );
 
   return 0;
 }
