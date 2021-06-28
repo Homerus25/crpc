@@ -166,30 +166,13 @@ void rpc_mqtt_server<Interface>::run()
               std::cout << "[server] contents: " << contents << std::endl;
               */
 
-              //std::cout << "published!" << std::endl;
-
-              auto const req = cista::deserialize<message>(contents);
-
-              auto const func_num = req->fn_idx;
-              if (func_num < this->fn_.size()) {
-                //std::cout << "passed with function number: " << func_num << "!\n";
-                //std::cout << "size: " << this->fn_.size() << "\n";
-
-                auto const pload = this->call(func_num,
-                                              std::vector<unsigned char>(req->payload_.begin(),
-                                                                         req->payload_.end()));
-                message ms{req->ticket_, func_num,
-                           cista::offset::vector<unsigned char>(pload.begin(), pload.end())};
-
-                auto const res_buf = cista::serialize(ms);
-
-                auto sp = wp.lock();
-                BOOST_ASSERT(sp);
-                sp->async_publish("topic1", std::string(begin(res_buf), end(res_buf)));
-                //sp->async_publish("crpc1", std::string(begin(res_buf), end(res_buf)));
-                //sp->async_publish(topic_name.to_string(), std::string(begin(res_buf), end(res_buf)));
-              }
-
+            auto const response = this->template process_message(contents);
+            if(response) {
+              auto sp = wp.lock();
+              BOOST_ASSERT(sp);
+              auto res_buf = response.value();
+              sp->async_publish("topic1", std::string(begin(res_buf), end(res_buf)));
+            }
 
               return true;
             });

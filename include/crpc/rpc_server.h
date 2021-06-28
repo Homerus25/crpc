@@ -7,19 +7,38 @@
 #include "cista/reflection/arity.h"
 #include "cista/serialization.h"
 
+#include "message.h"
 #include "rpc_fn.h"
-
 
 template<typename Interface>
 class rpc_server {
 public:
     std::vector<unsigned char> call(unsigned fn_idx,
                                     std::vector<unsigned char> const& params) {
-        return fn_.at(fn_idx)(params);
+        return this->fn_.at(fn_idx)(params);
     }
 
-    template <typename Fn, typename ReturnType, typename... Args>
-    void reg(fn<ReturnType, Args...> Interface::*const member_ptr, Fn&& f) {
+    template <typename BufferType>
+    const std::optional<std::vector<u_int8_t>> process_message(BufferType buffer) {
+      auto const req = cista::deserialize<message>(buffer);
+
+      auto const func_num = req->fn_idx;
+      if (func_num < this->fn_.size()) {
+        auto const pload = this->call(
+            func_num, std::vector<unsigned char>(req->payload_.begin(),
+                                                 req->payload_.end()));
+        message ms{
+            req->ticket_, func_num,
+            cista::offset::vector<unsigned char>(pload.begin(), pload.end())};
+
+        return cista::serialize(ms);
+      }
+
+      return {};
+    }
+
+      template <typename Fn, typename ReturnType, typename... Args>
+      void reg(fn<ReturnType, Args...> Interface::*const member_ptr, Fn&& f) {
         fn_[index_of_member(member_ptr)] =
                 [mf = std::forward<Fn>(f)](std::vector<unsigned char> const& in)
                         -> std::vector<unsigned char> {
