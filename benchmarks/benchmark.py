@@ -4,69 +4,72 @@ import time
 import graph
 import data
 
+def single_bench(clientName, clientNumber, functionID, iteration_count, benchsize):
+    startarray = ["./benchmarks/" + clientName + "-client", str(clientNumber), str(functionID), str(iteration_count)]#, str(benchsize)]
+    if functionID > 1:
+        startarray.append(str(benchsize))
+    print(startarray)
+    client = sp.Popen(startarray, encoding="ascii", stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE)
+
+    print("clients started")
+    time.sleep(1)
+
+    startTime = time.time()
+
+    print("clients run")
+    client.wait()
+
+    # todo: improve error handling here
+    print(client.stderr.read())
+
+    endTime = time.time()
+
+    rtts_string = client.stdout.read().split()
+    rtts = []
+    for time_str in rtts_string:
+        rtts.append(int(time_str))
+
+    #results.write(str(resTime) + str(";"))
+    #result_array.append(rtts)
+    #result_array.append(endTime - startTime)
+    print("restime: " + str(endTime - startTime))
+    return data.DataSet(rtts, clientName, functionID, iteration_count, benchsize, clientNumber)
+
 def bench(clientName, serverName, clientNumbers, iteration_count, benchsize):
     print("start server: " + serverName)
     server = sp.Popen(["./benchmarks/" + serverName + "-server"], encoding="ascii", stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE)
 
-    #result_array = []
     results = data.Collection()
 
     for functionID in range(1, 3):#5):
-        #print("start client: " + clientName)
+
+        # warmup
+        single_bench(clientName, clientNumbers[0], functionID, iteration_count, benchsize)
+
         for clientNumber in clientNumbers:
-            startarray = ["./benchmarks/" + clientName + "-client", str(clientNumber), str(functionID), str(iteration_count)]#, str(benchsize)]
-            if functionID > 1:
-                startarray.append(str(benchsize))
-            print(startarray)
-            client = sp.Popen(startarray, encoding="ascii", stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE)
-
-            print("clients started")
-            time.sleep(1)
-
-            startTime = time.time()
-
-            print("clients run")
-            client.wait()
-
-            # todo: improve error handling here
-            print(client.stderr.read())
-
-            endTime = time.time()
-
-            rtts_string = client.stdout.read().split()
-            rtts = []
-            for time_str in rtts_string:
-                rtts.append(int(time_str))
-
-            #results.write(str(resTime) + str(";"))
-            #result_array.append(rtts)
-            #result_array.append(endTime - startTime)
-            dt = data.DataSet(rtts, clientName, functionID, iteration_count, benchsize, clientNumber)
-            results.add(dt)
-            #results.add(dt)
-            print("restime: " + str(endTime - startTime))
-            #print("restime: " + str(resTime))
+            results.add(single_bench(clientName, clientNumber, functionID, iteration_count, benchsize))
 
     server.kill()
-    #results.write("\n")
-    #return result_array
     return results
 
+def main():
+    #clientNumber = [1, 2, 3, 5, 10, 20, 50, 75, 100]
+    clientNumber = [1, 5, 20, 100]
+    iteration_count = 100
+    benchsize = 5000
+    #benchsize = 262144
 
-#clientNumber = [1, 2, 3, 5, 10, 20, 50, 75, 100]
-clientNumber = [1, 5, 20, 100]
-iteration_count = 100
-benchsize = 5000
-#benchsize = 262144
+    result_ctx = bench("ctx-net", "ctx-net", clientNumber, iteration_count, benchsize)
+    result_mqtt = bench("mqtt", "mqtt", clientNumber, iteration_count, benchsize)
 
-result_ctx = bench("ctx-net", "ctx-net", clientNumber, iteration_count, benchsize)
-result_mqtt = bench("mqtt", "mqtt", clientNumber, iteration_count, benchsize)
+    merged_bench = result_mqtt.merge(result_ctx)
+    #merged_bench.save("test.bench")
 
-merged_bench = result_mqtt.merge(result_ctx)
-#merged_bench.save("test.bench")
+    #merged_bench = data.Collection()
+    #merged_bench.load("test.bench")
 
-#merged_bench = data.Collection()
-#merged_bench.load("test.bench")
+    #graph.plot_single_implementation(result_ctx, "ctx-net")
+    graph.plot_compare_implementations_scale_on_clients(merged_bench.filter_functionID(2))
 
-#graph.plot_single_implementation(result_ctx, "ctx-net")
-graph.plot_compare_implementations_scale_on_clients(merged_bench.filter_functionID(2))
+if __name__ == "__main__":
+    main()
