@@ -1,9 +1,9 @@
 #pragma once
 
-//#include <latch>
 #include <shared_mutex>
 #include <condition_variable>
 #include <thread>
+#include <iostream>
 
 class benchmark {
 public:
