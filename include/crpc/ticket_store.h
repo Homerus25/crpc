@@ -1,5 +1,8 @@
 #pragma once
 
+#include "cista/serialization.h"
+#include <iostream>
+
 class ticket_store {
 public:
     ticket_store() : ticket_num_(0) {}

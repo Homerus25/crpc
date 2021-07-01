@@ -89,6 +89,9 @@ target_link_libraries(crpc-example-client-async-websocket-net crpc)
 add_executable(crpc-client-benchmark example/client_benchmarks.cc src/ws_client.cpp)
 target_link_libraries(crpc-client-benchmark crpc)
 
+add_executable(no-network-benchmark example/no_network.cpp)
+target_link_libraries(no-network-benchmark crpc)
+
 #######
 
 #add_subdirectory(include/crpc/mqtt_cpp)

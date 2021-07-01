@@ -1,20 +1,35 @@
 #pragma once
 
-#include "rpc_server.h"
-#include "rpc_client.h"
+#include <future>
+#include "ticket_store.h"
+#include "message.h"
+#include "rpc_async_client.h"
+#include "no_network_server.h"
 
-template <typename Interface>
 struct no_network_transport {
-    explicit no_network_transport(rpc_server<Interface>& s) : s_{s} {}
+  explicit no_network_transport(std::function<void(const std::vector<uint8_t>, std::function<void(const std::vector<uint8_t>)>)> recv) : recv_{recv} {}
 
-    std::vector<unsigned char> send(unsigned fn_idx,
-                                    std::vector<unsigned char> const& params) {
-        return s_.call(fn_idx, params);
+    std::future<std::vector<unsigned char>> send(unsigned fn_idx,
+                                                 std::vector<unsigned char> const& params) {
+      message ms {
+          ts_.nextNumber(), fn_idx,
+          cista::offset::vector<unsigned char>(params.begin(), params.end())};
+      auto future = ts_.emplace(ms.ticket_);
+
+      auto const ms_buf = cista::serialize(ms);
+      this->recv_(ms_buf, [&](const std::vector<uint8_t> ms){ this->receive(ms); });
+
+      return future;
     }
 
-    rpc_server<Interface>& s_;
+    void receive(const std::vector<uint8_t> response) {
+      auto ms = cista::deserialize<message>(response);
+      ts_.setValue(ms->ticket_, ms->payload_);
+    }
+
+  std::function<void(const std::vector<uint8_t>, std::function<void(const std::vector<uint8_t>)>)> recv_;
+  ticket_store ts_;
 };
 
 template <typename Interface>
-using no_network_client = rpc_client<no_network_transport<Interface>, Interface>;
-
+using no_network_client = rpc_async_client<no_network_transport, Interface>;
