@@ -85,6 +85,10 @@ struct rpc_mqtt_transport {
     return future;
   }
 
+  auto& get_times() {
+    return ts_.get_times();
+  }
+
   ~rpc_mqtt_transport() {
     mqtt_client->unsubscribe("topic1");
     mqtt_client->disconnect(std::chrono::seconds(1));

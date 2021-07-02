@@ -17,8 +17,10 @@ int main(int argc, char* argv[]) {
 
     boost::asio::post(ioc, [&]() {
       rpc_mqtt_client<benchmark_interface> client{
-          ioc, std::string("localhost"), std::uint16_t(2000)};
+          ioc, std::string("localhost"), std::uint16_t(2000)
+      };
       get_benchmark_function(client, bench, *parameter)();
+      bench.save_time(client.get_times());
     });
 
     std::thread t1([&](){ ioc.run(); });

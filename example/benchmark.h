@@ -11,7 +11,7 @@ public:
 
   void wait_start();
 
-  void save_time(int);
+  void save_time(std::vector<std::chrono::milliseconds>& new_times);
 
 private:
   //std::latch start_point;
@@ -74,7 +74,10 @@ void benchmark::wait_start() {
   start_cv.wait(l, [&]{ return this->all_waited; });
 }
 
-void benchmark::save_time(int time) {
+void benchmark::save_time(std::vector<std::chrono::milliseconds>& new_times) {
   std::lock_guard lg(this->save_mutex);
-  this->rtts.push_back(time);
+  rtts.reserve(rtts.size() + new_times.size());
+  for(auto time : new_times) {
+    rtts.emplace_back(time.count());
+  }
 }

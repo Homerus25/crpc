@@ -70,41 +70,23 @@ void benchmark_run(Client& client, int times)
   }
 
   auto end = std::chrono::high_resolution_clock::now();
-  //std::cout << "time: " << duration_cast<std::chrono::milliseconds>(end - start).count() << "\n";
   std::cout << duration_cast<std::chrono::milliseconds>(end - start).count();// << "\n";
 }
 
 
-//template<typename ReturnType, typename ...ArgTypes>
-//void benchmark_run_generic(std::function<ReturnType(ArgTypes...)> proc, int iterations) {
 template<typename ReturnType>
 void benchmark_run_generic(std::function<ReturnType(void)> proc, benchmark& bench, int iterations) {
-  //wait_for_start_signal();
   std::vector<ReturnType> results;
   results.reserve(iterations);
 
   bench.wait_start();
-
-  auto start = std::chrono::high_resolution_clock::now();
 
   for(auto i = 0; i < iterations; ++i)
     results.emplace_back(proc());
 
   for(int i = 0; i < iterations; ++i) {
     auto res = results[i]();
-    //std::cout << "got: " << res << std::endl;
-    //if (res != "hello peter")
-    //  std::cerr << "invalid result!" << res << "\n";
   }
-  //std::cout << "finished!" << std::endl;
-
-  auto end = std::chrono::high_resolution_clock::now();
-
-  bench.save_time(duration_cast<std::chrono::milliseconds>(end - start).count());
-  //std::lock_guard<std::mutex> guard(save_mutex);
-  //times.push_back(duration_cast<std::chrono::milliseconds>(end - start).count());
-
-  //std::cout << duration_cast<std::chrono::milliseconds>(end - start).count() << "\n";
 }
 
 template<typename Client>
@@ -115,17 +97,6 @@ void benchmark_run_say_hello(Client& client, benchmark& bench, int iterations) {
 
 template<typename Client>
 void benchmark_average(Client& client, benchmark& bench, int iterations, int size) {
-  /*
-  data::vector<double> values(size);
-
-  std::random_device rd;
-  std::mt19937 gen(rd());
-
-  std::uniform_real_distribution<double> dis(0.1, 5.0);
-  std::generate(values.begin(), values.end(), [&](){ return dis(gen); });
-
-  auto proc = [&client, values2=values](){return client.call(&benchmark_interface::average, values2);};
-   */
   std::function<return_object<double>()> proc = [&client, &size]{return client.call(&benchmark_interface::average, data::vector<double>(size));};
   benchmark_run_generic(proc, bench, iterations);
 }
@@ -183,42 +154,4 @@ std::function<void()> get_benchmark_function(Client& client, benchmark& bench, B
     case 4: return [&client, &bench, iterations = parameter.iterations, size = parameter.benchsize]() { benchmark_send_receive(client, bench, iterations, size); };
       break;
   }
-  /*
-  if (argc == 3) {
-    int iterations = std::atoi(argv[2]);
-    if (iterations == 0) {
-      std::cout << "invalid iteration count!\n";
-      throw std::exception();
-    }
-
-    int function_id = std::atoi(argv[1]);
-    switch (function_id) {
-      case 0: return [&client, iterations]() { benchmark_run(client, iterations); };
-        break;
-
-      case 1: return [&client, &bench, iterations]() { benchmark_run_say_hello(client, bench, iterations); };
-        break;
-
-      case 2: if (argc == 4) {
-                int size = std::atoi(argv[3]);
-                return [&client, &bench, iterations, size]() { benchmark_average(client, bench, iterations, size); };
-              }
-        break;
-
-      case 3: if (argc == 4) {
-                int size = std::atoi(argv[3]);
-                return [&client, &bench, iterations, size]() { benchmark_get_random_numbers(client, bench, iterations, size); };
-              }
-        break;
-
-      case 4: if (argc == 4) {
-                int size = std::atoi(argv[3]);
-                return [&client, &bench, iterations, size]() { benchmark_send_receive(client, bench, iterations, size); };
-              }
-        break;
-    }
-  }
-   
-  throw std::exception();
-   */
 }

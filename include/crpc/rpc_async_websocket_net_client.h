@@ -60,6 +60,10 @@ struct async_websocket_net_transport {
       return future;
     }
 
+    auto& get_times() {
+      return ts_.get_times();
+    }
+
 private:
     ticket_store ts_;
     std::unique_ptr<net::ws_client> net_client_;

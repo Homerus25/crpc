@@ -17,6 +17,7 @@ int main(int argc, char* argv[]) {
   benchmark bench(parameter->clientCount, [&] {
     no_network_client<benchmark_interface> client{ [&](const std::vector<uint8_t> message, auto rcv) { server.receive(message, rcv); } };
     get_benchmark_function(client, bench, *parameter)();
+    bench.save_time(client.get_times());
   });
 
   server.kill();
