@@ -78,38 +78,61 @@ def plot_single_implementation(bench_data: data.Collection, implName):
     plt.show()
 
 
-# y -> median/mean
+# y -> mean
 # x -> clientNumber
 # impl by color
 def plot_compare_implementations_scale_on_clients(bench_data: data.Collection):
     implementations = bench_data.list_implementations()
     print(implementations)
-    colors = ["ob", "or"]
-    colors_b = ["blue", "red"]
+    colors = ["--ob", "--or", "--og"]
     for impl in implementations:
         bench = bench_data.filter_implementation(impl)
-        #ya = [x.get_median_time() for x in bench.get_data()]
+
         ya = [x.get_mean_time() for x in bench.get_data()]
         xa = [x.clients for x in bench.get_data()]
-        """
-        #err = [(x.get_longest_time() - x.get_mean_time()) * 3 for x in bench.get_data()]
-        err = []
-        for dt in bench.get_data():
-            mean = dt.get_mean_time()
-            err.append([dt.get_longest_time() - mean, mean - dt.get_shortest_time()])
-        """
+
         err_up = [(x.get_longest_time() - x.get_median_time()) for x in bench.get_data()]
         err_down = [(x.get_median_time() - x.get_shortest_time()) for x in bench.get_data()]
 
         color = colors.pop()
-        #plt.plot(xa, ya, color, label=impl)
-        plt.errorbar(xa, ya, yerr=[err_up, err_down])#, color=colors_b.pop())
-        #plt.bar(xa, ya)
-        #plt.legend(impl)
+        plt.errorbar(xa, ya, yerr=[err_up, err_down], fmt=color, capsize=5.0)
 
+    plt.legend(implementations)
+    plt.show()
 
-    #plt.yaxis.set_major_locator(MaxNLocator(integer=True))
-    #plt.xaxis.set_major_locator(MaxNLocator(integer=True))
+# y -> mean
+# x -> clientNumber
+# impl by color
+def plot_compare_implementations_scale_on_clients_all_functions(bench_data: data.Collection):
+    implementations = bench_data.list_implementations()
+    print(implementations)
+
+    figure, plots = plt.subplots(2, 2)
+
+    for fID in range(1,5):
+        if fID == 1:
+            plot = plots[0, 0]
+        elif fID == 2:
+            plot = plots[0, 1]
+        elif fID == 3:
+            plot = plots[1, 0]
+        elif fID == 4:
+            plot = plots[1, 1]
+
+        colors = ["--ob", "--or", "--og"]
+
+        for impl in implementations:
+            bench = bench_data.filter_functionID(fID)
+            bench = bench.filter_implementation(impl)
+
+            ya = [x.get_mean_time() for x in bench.get_data()]
+            xa = [x.clients for x in bench.get_data()]
+
+            err_up = [(x.get_longest_time() - x.get_median_time()) for x in bench.get_data()]
+            err_down = [(x.get_median_time() - x.get_shortest_time()) for x in bench.get_data()]
+
+            color = colors.pop()
+            plot.errorbar(xa, ya, yerr=[err_up, err_down], fmt=color, capsize=5.0)
 
     plt.legend(implementations)
     plt.show()
