@@ -1,19 +1,22 @@
 #pragma once
 
+#include <boost/asio/thread_pool.hpp>
 #include <future>
-#include "ticket_store.h"
 #include "message.h"
-#include "rpc_async_client.h"
 #include "no_network_server.h"
+#include "rpc_async_client.h"
+#include "ticket_store.h"
 
 struct no_network_transport {
-  explicit no_network_transport(std::function<void(const std::vector<uint8_t>, std::function<void(const std::vector<uint8_t>)>)> recv) : recv_{recv} {}
+  explicit no_network_transport(std::function<void(const std::vector<uint8_t>, std::function<void(const std::vector<uint8_t>)>)> recv)
+      : recv_{recv} {}
 
   std::future<std::vector<unsigned char>> send(unsigned fn_idx,
                                                std::vector<unsigned char> const& params) {
     message ms {
         ts_.nextNumber(), fn_idx,
         cista::offset::vector<unsigned char>(params.begin(), params.end())};
+
     auto future = ts_.emplace(ms.ticket_);
 
     auto const ms_buf = cista::serialize(ms);
@@ -23,7 +26,7 @@ struct no_network_transport {
   }
 
   void receive(const std::vector<uint8_t> response) {
-    auto ms = cista::deserialize<message>(response);
+    const auto* ms = cista::deserialize<message>(response);
     ts_.setValue(ms->ticket_, ms->payload_);
   }
 

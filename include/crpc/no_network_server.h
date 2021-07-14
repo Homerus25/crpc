@@ -1,35 +1,37 @@
 #pragma once
 
-#include <boost/lockfree/stack.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/post.hpp>
+#include <queue>
 #include "rpc_server.h"
+
+#include <iostream>
 
 template <typename Interface>
 struct no_network_server : public rpc_server<Interface> {
-  explicit no_network_server() : queue_(1024), alive_(true) {}
+  explicit no_network_server() : ioc_(1), alive_(true) {}
 
   void receive(const std::vector<uint8_t> message, std::function<void(const std::vector<uint8_t>)> client) {
-    queue_.push(std::make_pair(message, client));
+    boost::asio::post(
+        [cl = client, ms = message, this](){
+      auto const response = this->process_message(ms);
+      if(response)
+        cl(std::move(response.value()));
+    });
   }
 
   void run() {
     while(alive_) {
-        queue_.consume_all_atomic(
-            [&](std::pair<std::vector<uint8_t>,
-                          std::function<void(std::vector<uint8_t>)>>
-                    ms) {
-              auto const response = this->process_message(ms.first);
-              if (response)
-                ms.second(response.value());
-            });
+      ioc_.run();
     }
   }
 
   void kill() {
     alive_.store(false);
+    ioc_.stop();
   }
 
 private:
-
-  boost::lockfree::stack<std::pair<std::vector<uint8_t>, std::function<void(const std::vector<uint8_t>)>>> queue_;
+  boost::asio::io_context ioc_;
   std::atomic_bool alive_;
 };
