@@ -12,6 +12,7 @@ public:
     void setValue(uint64_t ticket_number,
                   const cista::offset::vector<unsigned char>& payload)
     {
+      std::lock_guard<std::mutex> lock(mutex_);
       auto ticket = tickets_.find(ticket_number);
       while (ticket == tickets_.end()) {
         std::this_thread::sleep_for(std::chrono::nanoseconds(1));
@@ -30,6 +31,7 @@ public:
 
     std::future<std::vector<unsigned char>> emplace(uint64_t ticket_number)
     {
+      std::lock_guard<std::mutex> lock(mutex_);
       std::promise<std::vector<unsigned char>> promise;
       auto future = promise.get_future();
       while(!tickets_.emplace(ticket_number, std::make_pair(std::move(promise), clock::now())).second) {
@@ -46,4 +48,5 @@ private:
   std::atomic<uint64_t> ticket_num_;
   cista::raw::hash_map<uint64_t, std::pair<std::promise<std::vector<unsigned char>>, std::chrono::time_point<clock>>> tickets_;
   std::vector<benchmark_time_unit> rtts_;
+  std::mutex mutex_;
 };
