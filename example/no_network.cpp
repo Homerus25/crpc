@@ -12,7 +12,8 @@ int main(int argc, char* argv[]) {
   auto server = no_network_server<benchmark_interface>();
   register_benchmark_interface(server);
 
-  auto st = std::thread([&](){ server.run(); });
+  int thread_count = std::atoi(argv[argc - 1]);
+  auto st = std::thread([&](){ server.run(thread_count); });
 
   benchmark bench(parameter->clientCount, [&] {
     no_network_client<benchmark_interface> client{ [&](const std::vector<uint8_t> message, auto rcv) { server.receive(message, rcv); } };

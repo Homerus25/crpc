@@ -13,6 +13,7 @@
 
 #include <boost/asio.hpp>
 
+#include <thread>
 #include <iostream>
 
 template <typename Interface>
@@ -22,7 +23,7 @@ public:
         : port_(std::move(port))
     {}
 
-    void run();
+    void run(int i);
 
 private:
     std::uint16_t port_;
@@ -69,7 +70,7 @@ inline void close_proc(std::set<con_sp_t>& cons, mi_sub_con& subs, con_sp_t cons
 
 
 template<typename Interface>
-void rpc_mqtt_server<Interface>::run()
+void rpc_mqtt_server<Interface>::run(int threads_count)
 {
   boost::asio::io_context ioc;
 
@@ -216,10 +217,11 @@ void rpc_mqtt_server<Interface>::run()
 
   server.listen();
 
-  std::thread t1([&](){ ioc.run(); });
-  std::thread t2([&](){ ioc.run(); });
+  std::vector<std::thread> thread_pool;
+  for(int i=0; i<threads_count-1; ++i)
+    thread_pool.emplace_back(std::thread([&](){ ioc.run(); }));
 
   ioc.run();
-  t1.join();
-  t2.join();
+  for (auto& thread : thread_pool)
+    thread.join();
 }

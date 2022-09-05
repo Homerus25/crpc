@@ -44,6 +44,12 @@ public:
     std::vector<benchmark_time_unit>& get_times() {
       return rtts_;
     }
+
+    /*
+    ~ticket_store() {
+      std::cerr << "~ts_" << std::endl;
+    }
+    */
 private:
   std::atomic<uint64_t> ticket_num_;
   cista::raw::hash_map<uint64_t, std::pair<std::promise<std::vector<unsigned char>>, std::chrono::time_point<clock>>> tickets_;

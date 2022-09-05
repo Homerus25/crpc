@@ -18,6 +18,16 @@ class Collection:
         newCollection.data.extend([x for x in self.data if x.functionID == fID])
         return newCollection
 
+    def filter_serverThreads(self, threadCount):
+        newCollection = Collection()
+        newCollection.data.extend([x for x in self.data if x.server_threads == threadCount])
+        return newCollection
+
+    def filter_clientsCount(self, clients):
+        newCollection = Collection()
+        newCollection.data.extend([x for x in self.data if x.clients == clients])
+        return newCollection
+
     def get_data(self):
         return self.data
 
@@ -44,14 +54,16 @@ class DataSet:
     functionID = -1
     iterations = -1
     datasize = -1
+    server_threads = -1
 
-    def __init__(self, times, implementation, fID, iterations, datasize, clients):
+    def __init__(self, times, implementation, fID, iterations, datasize, clients, serverThreads):
         self.rtts = times
         self.implementation = implementation
         self.functionID = fID
         self.iterations = iterations
         self.datasize = datasize
         self.clients = clients
+        self.server_threads = serverThreads
 
     def get_times_counted(self):
         buckets = {}

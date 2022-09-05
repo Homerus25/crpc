@@ -5,7 +5,7 @@
 #include <queue>
 #include "rpc_server.h"
 
-#include <iostream>
+#include <thread>
 
 template <typename Interface>
 struct no_network_server : public rpc_server<Interface> {
@@ -20,9 +20,18 @@ struct no_network_server : public rpc_server<Interface> {
     });
   }
 
-  void run() {
-    while(alive_) {
-      ioc_.run();
+  void run(int threads_count) {
+    std::vector<std::thread> thread_pool;
+    for(int i=0; i<threads_count-1; ++i) {
+      thread_pool.emplace_back(std::thread([&]() {
+        while (alive_) ioc_.run();
+      }));
+    }
+
+    while(alive_) { ioc_.run(); }
+
+    for (auto& thread : thread_pool) {
+      thread.join();
     }
   }
 

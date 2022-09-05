@@ -121,13 +121,13 @@ struct BenchmarkParameter {
 };
 
 std::optional<BenchmarkParameter> parse_benchmark_parameters(int argc, char* argv[]) {
-  if(argc == 4 || argc == 5) {
+  if(argc >= 4) {
     int clientsCount = std::atoi(argv[1]);
     int fID = std::atoi(argv[2]);
     int iterations = std::atoi(argv[3]);
 
     int benchsize;
-    if(argc == 5) {
+    if(argc >= 5) {
       benchsize = std::atoi(argv[4]);
     }
     return std::optional(BenchmarkParameter{fID, clientsCount, iterations, benchsize});

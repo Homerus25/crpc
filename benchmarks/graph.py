@@ -26,10 +26,10 @@ def plot_single_implementation(bench_data: data.Collection, implName):
 
     bd = bench_data.filter_implementation(implName)
 
-    (x, counts) = bd.filter_functionID(1).get_data()[0].get_times_counted()
-    (x2, counts2) = bd.filter_functionID(2).get_data()[0].get_times_counted()
-    (x3, counts3) = bd.filter_functionID(3).get_data()[0].get_times_counted()
-    (x4, counts4) = bd.filter_functionID(4).get_data()[0].get_times_counted()
+    (x, counts) = bd.filter_functionID(1).get_data()[1].get_times_counted()
+    (x2, counts2) = bd.filter_functionID(2).get_data()[1].get_times_counted()
+    (x3, counts3) = bd.filter_functionID(3).get_data()[1].get_times_counted()
+    (x4, counts4) = bd.filter_functionID(4).get_data()[1].get_times_counted()
 
     #(x, counts) = count_times(bench_data[0])
     #(x2, counts2) = count_times(bench_data[2])
@@ -91,11 +91,11 @@ def plot_compare_implementations_scale_on_clients(bench_data: data.Collection):
         ya = [x.get_mean_time() for x in bench.get_data()]
         xa = [x.clients for x in bench.get_data()]
 
-        err_up = [(x.get_longest_time() - x.get_median_time()) for x in bench.get_data()]
-        err_down = [(x.get_median_time() - x.get_shortest_time()) for x in bench.get_data()]
+        err_up = [(x.get_longest_time() - x.get_mean_time()) for x in bench.get_data()]
+        err_down = [(x.get_mean_time() - x.get_shortest_time()) for x in bench.get_data()]
 
         color = colors.pop()
-        plt.errorbar(xa, ya, yerr=[err_up, err_down], fmt=color, capsize=5.0)
+        plt.errorbar(xa, ya, yerr=[err_down, err_up], fmt=color, capsize=5.0)
 
     plt.legend(implementations)
     plt.show()
@@ -112,27 +112,40 @@ def plot_compare_implementations_scale_on_clients_all_functions(bench_data: data
     for fID in range(1,5):
         if fID == 1:
             plot = plots[0, 0]
+            fName = "say hello"
         elif fID == 2:
             plot = plots[0, 1]
+            fName = "calculate average"
         elif fID == 3:
             plot = plots[1, 0]
+            fName = "get random numbers"
         elif fID == 4:
             plot = plots[1, 1]
+            fName = "send back"
 
         colors = ["--ob", "--or", "--og"]
 
-        for impl in implementations:
+        #for impl in implementations:
+        for impl in ["mqtt", "no-network", "ctx-net"]:
             bench = bench_data.filter_functionID(fID)
             bench = bench.filter_implementation(impl)
 
             ya = [x.get_mean_time() for x in bench.get_data()]
             xa = [x.clients for x in bench.get_data()]
 
-            err_up = [(x.get_longest_time() - x.get_median_time()) for x in bench.get_data()]
-            err_down = [(x.get_median_time() - x.get_shortest_time()) for x in bench.get_data()]
+            err_up = [(x.get_longest_time() - x.get_mean_time()) for x in bench.get_data()]
+            err_down = [(x.get_mean_time() - x.get_shortest_time()) for x in bench.get_data()]
+            print(err_down)
 
             color = colors.pop()
-            plot.errorbar(xa, ya, yerr=[err_up, err_down], fmt=color, capsize=5.0)
+            plot.errorbar(xa, ya, yerr=[err_down, err_up], fmt=color, capsize=5.0)
+            plot.legend(implementations)
+            plot.title.set_text(fName)
+            plot.set_ylabel("round-trip-time (ms)")
+            plot.set_xlabel("number clients")
+            plot.yaxis.set_major_locator(MaxNLocator(integer=True))
+            plot.xaxis.set_major_locator(MaxNLocator(integer=True))
 
-    plt.legend(implementations)
+    figure.suptitle("6 serverthreads")
+    plt.subplots_adjust(wspace=0.3, hspace=0.3)
     plt.show()

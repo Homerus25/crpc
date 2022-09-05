@@ -3,14 +3,13 @@
 #include "benchmark_interface.h"
 
 int main(int argc, char* argv[]) {
-
-    boost::asio::io_service ios(8);
+    int thread_count = std::atoi(argv[1]);
+    boost::asio::io_service ios(thread_count);
 
     auto server = rpc_async_websocket_net_server<benchmark_interface>{ios, "0.0.0.0", "2000"};
     register_benchmark_interface(server);
 
-    server.run();
-    ios.run();
+    server.run(thread_count);
 
     return 0;
 }
