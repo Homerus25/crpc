@@ -1,8 +1,8 @@
 #pragma once
 
-#include "rpc_server.h"
-#include "message.h"
-#include "deserialize_helper.h"
+#include "../rpc_server.h"
+#include "../message.h"
+#include "../deserialize_helper.h"
 
 #define MQTT_STD_VARIANT
 #define MQTT_STD_OPTIONAL
@@ -104,9 +104,14 @@ void rpc_mqtt_server<Interface>::run(int threads_count)
         // including close_handler and error_handler.
         ep.start_session(std::move(spep));
 
-        ep.set_disconnect_handler([](){
-          //std::cout << "disconneted!" << std::endl;
-         });
+        ep.set_disconnect_handler(
+            [&connections, &subs, wp]
+            (){
+              //std::cout << "[server] disconnect received." << std::endl;
+              auto sp = wp.lock();
+              BOOST_ASSERT(sp);
+              close_proc(connections, subs, sp);
+            });
         // set connection (lower than MQTT) level handlers
         ep.set_close_handler(
             [&connections, &subs, wp]

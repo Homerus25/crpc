@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rpc_async_client.h"
+#include "../rpc_async_client.h"
 
 
 #define MQTT_STD_VARIANT
@@ -8,15 +8,15 @@
 //#define MQTT_USE_LOG
 //#define BOOST_LOG_DYN_LINK
 
-#include "message.h"
+#include "../message.h"
 #include "mqtt_cpp/include/mqtt_client_cpp.hpp"
 #include "mqtt_cpp/include/mqtt/setup_log.hpp"
 
-#include "ticket_store.h"
+#include "../ticket_store.h"
 
 struct rpc_mqtt_transport {
 
-    explicit rpc_mqtt_transport(boost::asio::io_context &ioc, std::string const& name, std::uint16_t port)
+    explicit rpc_mqtt_transport(boost::asio::io_context& ioc, std::string const& name, std::uint16_t port)
     : ioc_(ioc)
     {
       mqtt_client = mqtt::make_client(ioc, name, port);
@@ -89,9 +89,9 @@ struct rpc_mqtt_transport {
     return ts_.get_times();
   }
 
-  ~rpc_mqtt_transport() {
+  void closeConnection() {
     mqtt_client->unsubscribe("topic1");
-    mqtt_client->disconnect(std::chrono::seconds(1));
+    mqtt_client->disconnect();
   }
 
 private:

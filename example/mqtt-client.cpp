@@ -1,7 +1,6 @@
 #include "benchmark_interface.h"
 
-#include "crpc/rpc_mqtt_transport.h"
-#include "crpc/rpc_mqtt_transport.h"
+#include "crpc/mqtt/rpc_mqtt_transport.h"
 
 #include "benchmark.h"
 
@@ -20,6 +19,7 @@ int main(int argc, char* argv[]) {
           ioc, std::string("localhost"), std::uint16_t(2000)
       };
       get_benchmark_function(client, bench, *parameter)();
+      client.closeConnection();
       bench.save_time(client.get_times());
     });
 

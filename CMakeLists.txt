@@ -103,13 +103,13 @@ target_link_libraries(no-network-benchmark crpc)
 find_package(Threads REQUIRED)
 
 set(mqtt_cpp_iface_DIR mqtt_cpp)
-add_executable(crpc-client-mqtt example/mqtt-client.cpp include/crpc/rpc_mqtt_transport.h)
-target_include_directories(crpc-client-mqtt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/crpc/mqtt_cpp/include Boost )
+add_executable(crpc-client-mqtt example/mqtt-client.cpp include/crpc/mqtt/rpc_mqtt_transport.h)
+target_include_directories(crpc-client-mqtt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/crpc/mqtt/mqtt_cpp/include Boost )
 target_link_libraries(crpc-client-mqtt crpc Boost::log)
 #target_compile_options(crpc-client-mqtt PUBLIC "-pthread")
 
-add_executable(crpc-server-mqtt example/mqtt-server.cpp include/crpc/rpc_mqtt_transport.h)
-target_include_directories(crpc-server-mqtt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/crpc/mqtt_cpp/include Boost )
+add_executable(crpc-server-mqtt example/mqtt-server.cpp include/crpc/mqtt/rpc_mqtt_transport.h)
+target_include_directories(crpc-server-mqtt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/crpc/mqtt/mqtt_cpp/include Boost )
 target_link_libraries(crpc-server-mqtt crpc Boost::log)
 
 ###############################

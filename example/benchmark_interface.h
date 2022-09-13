@@ -85,7 +85,7 @@ void benchmark_run_generic(std::function<ReturnType(void)> proc, benchmark& benc
     results.emplace_back(proc());
 
   for(int i = 0; i < iterations; ++i) {
-    auto res = results[i]();
+    results[i]();
   }
 }
 
@@ -153,5 +153,6 @@ std::function<void()> get_benchmark_function(Client& client, benchmark& bench, B
 
     case 4: return [&client, &bench, iterations = parameter.iterations, size = parameter.benchsize]() { benchmark_send_receive(client, bench, iterations, size); };
       break;
+    default: return [](){};
   }
 }
