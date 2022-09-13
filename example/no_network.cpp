@@ -1,5 +1,5 @@
-#include "crpc/no_network_server.h"
-#include "crpc/no_network_client.h"
+#include "crpc/no_network/no_network_client.h"
+#include "crpc/no_network/no_network_server.h"
 #include "benchmark.h"
 #include "benchmark_interface.h"
 

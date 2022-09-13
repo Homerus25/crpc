@@ -3,8 +3,8 @@
 #include <iostream>
 #include <sstream>
 
+#include "crpc/no_network/no_network_client.h"
 #include "crpc/rpc_server.h"
-#include "crpc/no_network_client.h"
 
 TEST_CASE("no network test") {
     struct interface {
