@@ -9,65 +9,39 @@
 //#define MQTT_USE_LOG
 
 #include "mqtt_cpp/include/mqtt_server_cpp.hpp"
-#include "mqtt_cpp/include/mqtt/setup_log.hpp"
+//#include "mqtt_cpp/include/mqtt/setup_log.hpp"
 
-#include <boost/asio.hpp>
+#include "mqtt_utils.h"
 
-#include <thread>
-#include <iostream>
 
 template <typename Interface>
 class rpc_mqtt_server : public rpc_server<Interface> {
 public:
-    explicit rpc_mqtt_server(std::uint16_t port)
-        : port_(std::move(port))
-    {}
+  explicit rpc_mqtt_server(std::uint16_t port)
+      : port_(port)
+  {}
 
-    void run(int i);
+  void run(int threads_count);
 
 private:
-    std::uint16_t port_;
+  using MQTT_CO = MQTT_NS::callable_overlay<MQTT_NS::server_endpoint<std::mutex, std::lock_guard,2>>;
+  using packet_id_t = typename std::remove_reference_t<MQTT_CO>::packet_id_t;
+
+  MQTT_CO::v5_disconnect_handler get_disconnect_handler(std::weak_ptr<con_t>&);
+  MQTT_CO::close_handler get_close_handler(std::weak_ptr<con_t>&);
+  MQTT_CO::error_handler get_error_handler(std::weak_ptr<con_t>&);
+  MQTT_CO::v5_connect_handler get_connect_handler(std::weak_ptr<con_t>&);
+  MQTT_CO::v5_publish_handler get_publish_handler(std::weak_ptr<con_t>&);
+  MQTT_CO::v5_subscribe_handler get_subscribe_handler(std::weak_ptr<con_t>&);
+  MQTT_CO::v5_unsubscribe_handler get_unsubscribe_handler(std::weak_ptr<con_t>&);
+  void set_handler(mqtt::server<mqtt::strand, std::mutex, std::lock_guard, 2>& server);
+
+  std::set<con_sp_t> connections_;
+  mi_sub_con subs_;
+  std::uint16_t port_;
 };
 
-
-namespace mi = boost::multi_index;
-
-using con_t = MQTT_NS::server<>::endpoint_t;
-using con_sp_t = std::shared_ptr<con_t>;
-
-struct sub_con {
-  sub_con(MQTT_NS::buffer topic, con_sp_t con, MQTT_NS::qos qos_value)
-      :topic(std::move(topic)), con(std::move(con)), qos_value(qos_value) {}
-  MQTT_NS::buffer topic;
-  con_sp_t con;
-  MQTT_NS::qos qos_value;
-};
-
-struct tag_topic {};
-struct tag_con {};
-
-using mi_sub_con = mi::multi_index_container<
-sub_con,
-mi::indexed_by<
-    mi::ordered_non_unique<
-    mi::tag<tag_topic>,
-BOOST_MULTI_INDEX_MEMBER(sub_con, MQTT_NS::buffer, topic)
->,
-mi::ordered_non_unique<
-    mi::tag<tag_con>,
-BOOST_MULTI_INDEX_MEMBER(sub_con, con_sp_t, con)
->
->
->;
-
-inline void close_proc(std::set<con_sp_t>& cons, mi_sub_con& subs, con_sp_t const& con) {
-  cons.erase(con);
-
-  auto& idx = subs.get<tag_con>();
-  auto r = idx.equal_range(con);
-  idx.erase(r.first, r.second);
-}
-
+#include "mqtt_server_handler.h"
 
 template<typename Interface>
 void rpc_mqtt_server<Interface>::run(int threads_count)
@@ -82,143 +56,8 @@ void rpc_mqtt_server<Interface>::run(int threads_count)
       ioc
   );
 
-  server.set_error_handler(
-      [](MQTT_NS::error_code ec) {
-        std::cout << "error: " << ec.message() << std::endl;
-      }
-  );
 
-  std::set<con_sp_t> connections;
-  mi_sub_con subs;
-
-  server.set_accept_handler(
-      [&connections, &subs, this](con_sp_t spep) {
-        auto& ep = *spep;
-        std::weak_ptr<con_t> wp(spep);
-
-        using packet_id_t = typename std::remove_reference_t<decltype(ep)>::packet_id_t;
-        //std::cout << "accept" << std::endl;
-
-        // Pass spep to keep lifetime.
-        // It makes sure wp.lock() never return nullptr in the handlers below
-        // including close_handler and error_handler.
-        ep.start_session(std::move(spep));
-
-        ep.set_disconnect_handler(
-            [&connections, &subs, wp]
-            (){
-              //std::cout << "[server] disconnect received." << std::endl;
-              auto sp = wp.lock();
-              BOOST_ASSERT(sp);
-              close_proc(connections, subs, sp);
-            });
-        // set connection (lower than MQTT) level handlers
-        ep.set_close_handler(
-            [&connections, &subs, wp]
-                (){
-              //std::cout << "[server] closed." << std::endl;
-              auto sp = wp.lock();
-              BOOST_ASSERT(sp);
-              close_proc(connections, subs, sp);
-            });
-        ep.set_error_handler(
-            [&connections, &subs, wp]
-                (MQTT_NS::error_code ec){
-              std::cerr << "[server] error: " << ec.message() << std::endl;
-              auto sp = wp.lock();
-              BOOST_ASSERT(sp);
-              close_proc(connections, subs, sp);
-            });
-
-        // set MQTT level handlers
-        ep.set_connect_handler(
-            [&connections, wp]
-                (MQTT_NS::buffer client_id,
-                 MQTT_NS::optional<MQTT_NS::buffer> username,
-                 MQTT_NS::optional<MQTT_NS::buffer> password,
-                 MQTT_NS::optional<MQTT_NS::will>,
-                 bool clean_session,
-                 std::uint16_t keep_alive) {
-              using namespace MQTT_NS::literals;
-              /*
-              std::cout << "[server] client_id    : " << client_id << std::endl;
-              std::cout << "[server] username     : " << (username ? username.value() : "none"_mb) << std::endl;
-              std::cout << "[server] password     : " << (password ? password.value() : "none"_mb) << std::endl;
-              std::cout << "[server] clean_session: " << std::boolalpha << clean_session << std::endl;
-              std::cout << "[server] keep_alive   : " << keep_alive << std::endl;
-               */
-              //std::cout << "client connected!" << std::endl;
-              auto sp = wp.lock();
-              BOOST_ASSERT(sp);
-              connections.insert(sp);
-              sp->connack(false, MQTT_NS::connect_return_code::accepted);
-              return true;
-            }
-        );
-        ep.set_publish_handler(
-            [this, &subs, wp]
-                (MQTT_NS::optional<packet_id_t> packet_id,
-                 MQTT_NS::publish_options pubopts,
-                 MQTT_NS::buffer topic_name,
-                 MQTT_NS::buffer contents){
-              /*
-              std::cout << "[server] publish received."
-                        << " dup: "    << pubopts.get_dup()
-                        << " qos: "    << pubopts.get_qos()
-                        << " retain: " << pubopts.get_retain() << std::endl;
-              if (packet_id)
-                std::cout << "[server] packet_id: " << *packet_id << std::endl;
-              std::cout << "[server] topic_name: " << topic_name << std::endl;
-              std::cout << "[server] contents: " << contents << std::endl;
-              */
-
-            auto const response = this->template process_message(contents);
-            if(response) {
-              auto sp = wp.lock();
-              BOOST_ASSERT(sp);
-              auto res_buf = response.value();
-              sp->async_publish("topic1", std::string(begin(res_buf), end(res_buf)));
-            }
-
-              return true;
-            });
-        ep.set_subscribe_handler(
-            [&subs, wp]
-                (packet_id_t packet_id,
-                 std::vector<MQTT_NS::subscribe_entry> entries) {
-              //std::cout << "[server]subscribe received. packet_id: " << packet_id << std::endl;
-              std::vector<MQTT_NS::suback_return_code> res;
-              res.reserve(entries.size());
-              auto sp = wp.lock();
-              BOOST_ASSERT(sp);
-              /*
-              for (auto const& e : entries) {
-               //std::cout << "[server] topic_filter: " << e.topic_filter  << " qos: " << e.subopts.get_qos() << std::endl;
-                res.emplace_back(MQTT_NS::qos_to_suback_return_code(e.subopts.get_qos()));
-                subs.emplace(std::move(e.topic_filter), sp, e.subopts.get_qos());
-                //subs.emplace(e.topic_filter, sp, e.subopts.get_qos());
-              }
-               */
-              sp->suback(packet_id, res);
-              return true;
-            }
-        );
-        ep.set_unsubscribe_handler(
-            [&subs, wp]
-                (packet_id_t packet_id,
-                 std::vector<MQTT_NS::unsubscribe_entry> entries) {
-              //std::cout << "[server]unsubscribe received. packet_id: " << packet_id << std::endl;
-              for (auto const& e : entries) {
-                subs.erase(e.topic_filter);
-              }
-              auto sp = wp.lock();
-              BOOST_ASSERT(sp);
-              sp->unsuback(packet_id);
-              return true;
-            }
-        );
-      }
-  );
+  set_handler(server);
 
   server.listen();
 
@@ -229,4 +68,42 @@ void rpc_mqtt_server<Interface>::run(int threads_count)
   ioc.run();
   for (auto& thread : thread_pool)
     thread.join();
+}
+
+template<typename Interface>
+void rpc_mqtt_server<Interface>::set_handler(
+    mqtt::server<mqtt::strand, std::mutex, std::lock_guard, 2>& server) {
+
+  server.set_error_handler(
+      [](MQTT_NS::error_code error_code) {
+        std::cout << "error: " << error_code.message() << std::endl;
+      }
+  );
+
+  server.set_accept_handler(
+      [this](con_sp_t spep) {
+
+        auto& endpoint = *spep;
+        std::weak_ptr<con_t> wp(spep);
+
+        Log("accept");
+
+        endpoint.start_session(std::move(spep));
+        endpoint.set_v5_disconnect_handler(this->get_disconnect_handler(wp));
+        endpoint.set_close_handler(this->get_close_handler(wp));
+        endpoint.set_error_handler(this->get_error_handler(wp));
+
+        // set MQTT level handlers
+        endpoint.set_v5_connect_handler(this->get_connect_handler(wp));
+        endpoint.set_v5_publish_handler(this->get_publish_handler(wp));
+        endpoint.set_v5_subscribe_handler(this->get_subscribe_handler(wp));
+        endpoint.set_v5_unsubscribe_handler(this->get_unsubscribe_handler(wp));
+        endpoint.set_v5_unsuback_handler([](packet_id_t,
+                                              std::vector<MQTT_NS::v5::unsuback_reason_code> reasons,
+                                            MQTT_NS::v5::properties props){return true;});
+        endpoint.set_v5_connack_handler([](bool session_present,
+                                           MQTT_NS::v5::connect_reason_code reason_code,
+                                           MQTT_NS::v5::properties props){return true;});
+      }
+  );
 }

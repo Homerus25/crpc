@@ -2,7 +2,6 @@
 
 #include "../rpc_async_client.h"
 
-
 #define MQTT_STD_VARIANT
 #define MQTT_STD_OPTIONAL
 //#define MQTT_USE_LOG
@@ -14,58 +13,20 @@
 
 #include "../ticket_store.h"
 
-struct rpc_mqtt_transport {
+#include "../log.h"
 
+struct rpc_mqtt_transport {
     explicit rpc_mqtt_transport(boost::asio::io_context& ioc, std::string const& name, std::uint16_t port)
     : ioc_(ioc)
     {
-      mqtt_client = mqtt::make_client(ioc, name, port);
-      //mqtt_client->set_client_id("cid1");
-      mqtt_client->set_clean_session(true);
-      mqtt_client->set_connack_handler(
-          [&](bool sp, mqtt::connect_return_code connack_return_code) {
-            if (connack_return_code == mqtt::connect_return_code::accepted) {
-              //mqtt_client->async_subscribe("topic1", mqtt::qos::at_most_once);
-              mqtt_client->subscribe("topic1", mqtt::qos::at_most_once);
-              //std::cout << "subscribed!" << std::endl;
-            }
-            return true;
-          });
+      mqtt_client_ = mqtt::make_client(ioc, name, port, mqtt::protocol_version::v5);
 
-      mqtt_client->set_close_handler([] {
-        //std::cout << "closed!" << std::endl;
-      });
-      mqtt_client->set_error_handler(
-          [](boost::system::error_code const& ec) {
-            std::cerr << "error occured: " << ec << std::endl;
-          });
-      mqtt_client->set_puback_handler(
-          [](std::uint16_t packet_id) { return true; });
-      mqtt_client->set_pubrec_handler(
-          [](std::uint16_t packet_id) { return true; });
-      mqtt_client->set_pubcomp_handler(
-          [](std::uint16_t packet_id) { return true; });
+      mqtt_client_->set_client_id("cid1");
+      mqtt_client_->set_clean_start(true);
 
-      mqtt_client->set_suback_handler(
-          [&](std::uint16_t packet_id,
-             std::vector<mqtt::suback_return_code> results) {
-            return true;
-          });
+      set_handler();
 
-      mqtt_client->set_publish_handler(
-          [&](
-              mqtt::optional<std::uint16_t> packet_id,
-              mqtt::publish_options options, mqtt::buffer topic_name,
-              mqtt::buffer contents) {
-            //std::cout << "pub handler, topic: " << topic_name
-            //          << " content: " << contents << std::endl; //"\n";
-
-            auto ms = cista::deserialize<message>(contents);
-            ts_.setValue(ms->ticket_, ms->payload_);
-
-            return true;
-          });
-      mqtt_client->connect();
+      mqtt_client_->connect();
   }
 
   std::future<std::vector<unsigned char>> send(unsigned fn_idx,
@@ -77,10 +38,8 @@ struct rpc_mqtt_transport {
 
     auto const ms_buf = cista::serialize(ms);
     auto const ms_string = std::string(begin(ms_buf), end(ms_buf));
-    mqtt_client->publish("topic1", ms_string);  //, mqtt::qos::at_most_once);
-    //mqtt_client->async_publish(MQTT_NS::allocate_buffer("rpc"), MQTT_NS::allocate_buffer(ms_string), MQTT_NS::qos::exactly_once,[](MQTT_NS::error_code){});
-    //mqtt_client->async_publish("rpc", ms_string, MQTT_NS::qos::exactly_once,[](MQTT_NS::error_code){});
-    //mqtt_client->async_publish("rpc", "test", MQTT_NS::qos::exactly_once,[](MQTT_NS::error_code){});
+    //mqtt_client_->publish(topic, ms_string);
+    mqtt_client_->async_publish(topic, ms_string);
 
     return future;
   }
@@ -89,16 +48,48 @@ struct rpc_mqtt_transport {
     return ts_.get_times();
   }
 
-  void closeConnection() {
-    mqtt_client->unsubscribe("topic1");
-    mqtt_client->disconnect();
+  void close_connection() {
+    mqtt_client_->unsubscribe(topic);
+    mqtt_client_->disconnect(std::chrono::seconds(1));
   }
 
 private:
-  std::shared_ptr<mqtt::callable_overlay<mqtt::client<mqtt::tcp_endpoint<as::ip::tcp::socket, as::io_context::strand>>>> mqtt_client;
+
+  const std::string topic = "mqtt_client_cpp/topic1";
+
+  using MQTT_CO = mqtt::callable_overlay<mqtt::client<mqtt::tcp_endpoint<boost::asio::ip::tcp::socket, mqtt::strand>>>;
+  using packet_id_t = typename std::remove_reference_t<MQTT_CO>::packet_id_t;
+  std::shared_ptr<MQTT_CO> mqtt_client_;
   ticket_store ts_;
   boost::asio::io_context &ioc_;
-};
+  uint16_t pid_sub1;
+
+  void set_handler() {
+    mqtt_client_->set_v5_connack_handler( get_connack_handler());
+    mqtt_client_->set_close_handler([] {
+      Log("closed!");
+    });
+    mqtt_client_->set_error_handler(
+        [](MQTT_NS::error_code const& ec) {
+          LogErr("error occured: " , ec);
+        });
+    mqtt_client_->set_v5_puback_handler(get_puback_handler());
+    mqtt_client_->set_v5_pubrec_handler(get_pubrec_handler());
+    mqtt_client_->set_v5_pubcomp_handler(get_pubcomp_handler());
+
+    mqtt_client_->set_v5_suback_handler(get_suback_handler());
+    mqtt_client_->set_v5_publish_handler(get_publish_handler());
+  }
+
+  MQTT_CO::v5_connack_handler get_connack_handler();
+  MQTT_CO::v5_puback_handler get_puback_handler() const;
+  MQTT_CO::v5_pubrec_handler get_pubrec_handler() const;
+  MQTT_CO::v5_pubcomp_handler get_pubcomp_handler() const;
+  static MQTT_CO::v5_suback_handler get_suback_handler();
+  MQTT_CO::v5_publish_handler get_publish_handler();
+} __attribute__((aligned(128))) __attribute__((packed));
+
+#include "mqtt_client_handler.h"
 
 template<typename Interface>
 using rpc_mqtt_client = rpc_async_client<rpc_mqtt_transport, Interface>;
