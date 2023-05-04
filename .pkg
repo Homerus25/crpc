@@ -1,16 +1,16 @@
 [cista]
   url=git@github.com:felixguendling/cista.git
   branch=master
-  commit=474dc26ce5adc74afa01a2f18a62a19803cfbbb4
+  commit=d14b70b9f45d249d1c9a20bcc13877cc4b771188
 [ctx]
   url=git@github.com:motis-project/ctx.git
   branch=master
-  commit=30b05eca8745173e4a7e4f40695f119a8484a708
+  commit=aec268c603d5d2fde734c4cea83445369b835a1d
 [doctest]
   url=git@github.com:motis-project/doctest.git
   branch=master
-  commit=932a2ca50666138256dae56fbb16db3b1cae133a
+  commit=70e8f76437b76dd5e9c0a2eb9b907df190ab71a0
 [net]
   url=git@github.com:motis-project/net.git
   branch=master
-  commit=ca08edddd8d2e7ad2ad1a53ede4d111b96733e17
+  commit=4fdd79d50481fdf642cb77bc92cdd4c68ddce040
