@@ -2,6 +2,7 @@
 
 #include "cista/serialization.h"
 #include <iostream>
+#include <future>
 
 class ticket_store {
   using benchmark_time_unit = std::chrono::milliseconds;

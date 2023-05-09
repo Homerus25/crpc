@@ -1,7 +1,7 @@
+#include "../benchmark.h"
+#include "../benchmark_interface.h"
 #include "crpc/no_network/no_network_client.h"
 #include "crpc/no_network/no_network_server.h"
-#include "benchmark.h"
-#include "benchmark_interface.h"
 
 int main(int argc, char* argv[]) {
   auto parameter = parse_benchmark_parameters(argc, argv);

@@ -25,8 +25,8 @@ link_directories(${Boost_LIBRARY_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIR} deps/net/include)
 #add_definitions(-DBOOST_ASIO_DISABLE_CONCEPTS=1)  # fixes issue with Boost 1.72.0
 
-#include(cmake/pkg.cmake)
-add_subdirectory(deps)
+include(cmake/pkg.cmake)
+include_directories(deps/net)
 
 
 ################################
@@ -63,11 +63,30 @@ target_link_libraries(crpc-test doctest crpc)
 ################################
 #add_definitions(__clang__)
 
+# simple example / no benchmark
 add_executable(crpc-example-server example/server.cc)
 target_link_libraries(crpc-example-server crpc)
 
 add_executable(crpc-example-client example/client.cc)
 target_link_libraries(crpc-example-client crpc)
+
+add_executable(crpc-no-network-test example/no_network/no_network_test.cpp)
+target_link_libraries(crpc-no-network-test crpc)
+
+
+# http and websocket
+add_executable(http-ws-server example/http_ws/http_ws_server.cpp)
+target_link_libraries(http-ws-server crpc web-server)
+
+add_executable(rpc-http-client example/http_ws/rpc_http_client.cpp)
+target_link_libraries(rpc-http-client crpc http-client)
+
+add_executable(rpc-ws-client example/http_ws/rpc_ws_client.cpp src/ws_client.cpp)
+target_link_libraries(rpc-ws-client crpc)
+
+
+
+
 
 add_executable(crpc-example-client-async example/async_client.cc)
 target_link_libraries(crpc-example-client-async crpc)
@@ -89,7 +108,7 @@ target_link_libraries(crpc-example-client-async-websocket-net crpc)
 add_executable(crpc-client-benchmark example/client_benchmarks.cc src/ws_client.cpp)
 target_link_libraries(crpc-client-benchmark crpc)
 
-add_executable(no-network-benchmark example/no_network.cpp)
+add_executable(no-network-benchmark example/no_network/no_network.cpp)
 target_link_libraries(no-network-benchmark crpc)
 
 #######
