@@ -8,6 +8,7 @@
 #include "../../ws_client.h"
 #include "boost/asio/post.hpp"
 
+#include <cista/containers/vector.h>
 #include <memory>
 
 struct ws_transport {
@@ -28,7 +29,7 @@ struct ws_transport {
     });
 
     client->on_msg([&](std::string const& msg, bool /* binary */) {
-      data::vector<unsigned char> dd(msg.begin(), msg.end());
+      cista::offset::vector<unsigned char> dd(msg.begin(), msg.end());
       auto ms = cista::deserialize<message>(dd);
       this->ts_.setValue(ms->ticket_, ms->payload_);
     });
