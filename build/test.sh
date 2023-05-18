@@ -1,14 +1,14 @@
 #!/bin/bash
-
-cmake --build . --target http-ws-server rpc-http-client rpc-ws-client crpc-server-mqtt crpc-client-mqtt
+cmake ..
+cmake  --build . --target crpc-http-ws-server crpc-http-client crpc-ws-client crpc-mqtt-server crpc-mqtt-client
 
 # test websocket
-./http-ws-server &
+./crpc-http-ws-server &
 PIDserver=$!
 
 sleep 1
 
-./rpc-ws-client
+./crpc-ws-client
 ECws=$?
 kill $PIDserver
 
@@ -22,12 +22,12 @@ fi
 
 
 # test http
-./http-ws-server &
+./crpc-http-ws-server &
 PIDserver2=$!
 
 sleep 1
 
-./rpc-http-client
+./crpc-http-client
 EChttp=$?
 kill $PIDserver2
 
@@ -41,12 +41,12 @@ fi
 
 
 # test mqtt
-./crpc-server-mqtt 1 &
+./crpc-mqtt-server 1 &
 PIDserver2=$!
 
 sleep 1
 
-./crpc-client-mqtt
+./crpc-mqtt-client
 EChttp=$?
 kill $PIDserver2
 

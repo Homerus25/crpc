@@ -9,6 +9,7 @@
 #include <memory>
 #include <utility>
 
+#include <cista/containers.h>
 #include "net/http/client/http_client.h"
 #include "net/tcp.h"
 
@@ -57,7 +58,7 @@ struct http_transport {
             if (ec) {
               std::cout << "error: " << ec.message() << "\n";
             } else {
-              data::vector<unsigned char> dd(res.body.begin(), res.body.end());
+              cista::offset::vector<unsigned char> dd(res.body.begin(), res.body.end());
               auto ms = cista::deserialize<message>(dd);
               this->ts_.setValue(ms->ticket_, ms->payload_);
             }

@@ -75,14 +75,14 @@ target_link_libraries(crpc-no-network-test crpc)
 
 
 # http and websocket
-add_executable(http-ws-server test/http_ws/http_ws_server.cc)
-target_link_libraries(http-ws-server crpc web-server)
+add_executable(crpc-http-ws-server test/http_ws/http_ws_server.cc)
+target_link_libraries(crpc-http-ws-server crpc web-server)
 
-add_executable(rpc-http-client test/http_ws/rpc_http_client.cc)
-target_link_libraries(rpc-http-client crpc http-client)
+add_executable(crpc-http-client test/http_ws/rpc_http_client.cc)
+target_link_libraries(crpc-http-client crpc http-client)
 
-add_executable(rpc-ws-client test/http_ws/rpc_ws_client.cc src/ws_client.cc)
-target_link_libraries(rpc-ws-client crpc)
+add_executable(crpc-ws-client test/http_ws/rpc_ws_client.cc src/ws_client.cc)
+target_link_libraries(crpc-ws-client crpc)
 
 
 
@@ -108,8 +108,8 @@ target_link_libraries(crpc-example-client-async-websocket-net crpc)
 add_executable(crpc-client-benchmark example/client_benchmarks.cc src/ws_client.cc)
 target_link_libraries(crpc-client-benchmark crpc)
 
-add_executable(no-network-benchmark example/no_network/no_network.cc)
-target_link_libraries(no-network-benchmark crpc)
+add_executable(crpc-no-network-benchmark example/no_network/no_network.cc)
+target_link_libraries(crpc-no-network-benchmark crpc)
 
 #######
 
@@ -122,14 +122,14 @@ target_link_libraries(no-network-benchmark crpc)
 find_package(Threads REQUIRED)
 
 set(mqtt_cpp_iface_DIR mqtt_cpp)
-add_executable(crpc-client-mqtt test/mqtt/mqtt-client.cc include/crpc/mqtt/rpc_mqtt_transport.h)
-target_include_directories(crpc-client-mqtt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/crpc/mqtt/mqtt_cpp/include Boost )
-target_link_libraries(crpc-client-mqtt crpc Boost::log)
+add_executable(crpc-mqtt-client test/mqtt/mqtt-client.cc include/crpc/mqtt/rpc_mqtt_transport.h)
+target_include_directories(crpc-mqtt-client PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/crpc/mqtt/mqtt_cpp/include Boost )
+target_link_libraries(crpc-mqtt-client crpc Boost::log)
 #target_compile_options(crpc-client-mqtt PUBLIC "-pthread")
 
-add_executable(crpc-server-mqtt test/mqtt/mqtt-server.cc include/crpc/mqtt/rpc_mqtt_transport.h)
-target_include_directories(crpc-server-mqtt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/crpc/mqtt/mqtt_cpp/include Boost )
-target_link_libraries(crpc-server-mqtt crpc Boost::log)
+add_executable(crpc-mqtt-server test/mqtt/mqtt-server.cc include/crpc/mqtt/rpc_mqtt_transport.h)
+target_include_directories(crpc-mqtt-server PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/crpc/mqtt/mqtt_cpp/include Boost )
+target_link_libraries(crpc-mqtt-server crpc Boost::log)
 
 ###############################
 if(FALSE)
