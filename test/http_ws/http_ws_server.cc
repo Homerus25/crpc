@@ -1,5 +1,5 @@
 #include "crpc/http/http_ws_server.h"
-#include "../benchmark_interface.h"
+#include "../../example/benchmark_interface.h"
 
 int main(int argc, char* argv[]) {
   boost::asio::io_context ioc;

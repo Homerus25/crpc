@@ -1,6 +1,6 @@
 #define CRPC_LOG
 
-#include "../benchmark_interface.h"
+#include "../../example/benchmark_interface.h"
 #include "crpc/mqtt/rpc_mqtt_transport.h"
 
 int main(int argc, char* argv[]) {

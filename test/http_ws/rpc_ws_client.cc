@@ -1,13 +1,18 @@
-
 #define CRPC_LOG
 
-#include "../benchmark_interface.h"
-#include "crpc/http/rpc_http_client.h"
+#include "crpc/http/rpc_ws_client.h"
+#include "../../example/benchmark_interface.h"
 
 int main(int argc, char* argv[]) {
-  rpc_http_client<benchmark_interface> client{std::string("http://127.0.0.1:9000/"), 9000u};
+  boost::asio::io_context ioc;
+  rpc_ws_client<benchmark_interface> client{ioc, std::string("127.0.0.1"), 9000u};
 
-  std::this_thread::sleep_for(std::chrono::seconds(2));
+  ioc.poll();
+  std::thread t1([&](){
+    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> x
+        = boost::asio::make_work_guard(ioc);
+    ioc.run();
+  });
 
   std::string testStr("Hello Big Data Echo");
 
@@ -28,6 +33,8 @@ int main(int argc, char* argv[]) {
   if (testStr != echoback)
     return 1;
 
-  client.stop();
+
+  ioc.stop();
+  t1.join();
   return 0;
 }
