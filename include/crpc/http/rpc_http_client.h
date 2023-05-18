@@ -20,11 +20,18 @@ struct http_transport {
     : url_(std::move(url))
   {
     http_client_ = make_http(ios_, url_);
-    http_client_->connect([](net::tcp::tcp_ptr, boost::system::error_code){
-      ;
+    http_client_->connect([](net::tcp::tcp_ptr, boost::system::error_code ec){
+      if(ec)
+        std::cout << "error occured: " << ec << std::endl;
     });
 
-    std::thread t1([&](){ ios_.run(); });
+    ios_.poll();
+
+    std::thread t1([&](){
+      boost::asio::executor_work_guard<boost::asio::io_context::executor_type> x
+          = boost::asio::make_work_guard(ios_);
+      ios_.run();
+    });
     t1.detach();
   }
 
@@ -44,23 +51,23 @@ struct http_transport {
           ms_string
       };
 
-      http_client_
-          ->query(req, [this](auto ptr, auto res, boost::system::error_code ec) {
+      //http_client_
+      make_http(ios_, url_)
+          ->query(req, [this](std::shared_ptr<net::tcp>, response const& res, boost::system::error_code ec) {
             if (ec) {
               std::cout << "error: " << ec.message() << "\n";
             } else {
-              std::cout << "HEADER:\n";
-              for (auto const& header : res.headers) {
-                std::cout << header.first << ": " << header.second << "\n";
-              }
-
-              std::vector<unsigned char> dd(res.body.begin(), res.body.end());
+              data::vector<unsigned char> dd(res.body.begin(), res.body.end());
               auto ms = cista::deserialize<message>(dd);
               this->ts_.setValue(ms->ticket_, ms->payload_);
             }
           });
 
     return future;
+  }
+
+  void stop() {
+    ios_.stop();
   }
 
 private:

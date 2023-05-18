@@ -2,7 +2,8 @@
 #include "../benchmark_interface.h"
 
 int main(int argc, char* argv[]) {
-  http_ws_server<benchmark_interface> server{};
+  boost::asio::io_context ioc;
+  http_ws_server<benchmark_interface> server{ioc};
   register_benchmark_interface(server);
-  server.run();
+  ioc.run();
 }

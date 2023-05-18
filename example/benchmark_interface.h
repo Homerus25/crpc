@@ -14,7 +14,7 @@ struct benchmark_interface {
   fn<data::string, data::string> say_hello;
   fn<double, data::vector<double>> average;
   fn<data::vector<double>, int> get_rand_nums;
-  fn<data::vector<char>, data::vector<char>> send_rcv_large_data;
+  fn<data::vector<unsigned char>, data::vector<unsigned char>> send_rcv_large_data;
 };
 
 inline void wait_for_start_signal() {
@@ -43,7 +43,8 @@ void register_benchmark_interface(Server &server) {
                std::iota(ret.begin(), ret.end(), 0.);
                return ret;
   });
-  server.reg(&benchmark_interface::send_rcv_large_data, [](data::vector<char> l_data) { return l_data; });
+  server.reg(&benchmark_interface::send_rcv_large_data,
+             [](data::vector<unsigned char> l_data) { return l_data; });
 }
 
 template<typename Client>

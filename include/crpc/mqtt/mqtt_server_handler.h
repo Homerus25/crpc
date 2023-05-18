@@ -18,7 +18,6 @@ rpc_mqtt_server<Interface>::get_unsubscribe_handler(std::weak_ptr<con_t>& wp) {
           }
         }
         BOOST_ASSERT(sp);
-        //sp->unsuback(packet_id);
         return true;
       };
 }
@@ -36,13 +35,10 @@ rpc_mqtt_server<Interface>::get_subscribe_handler(std::weak_ptr<con_t>& wp) {
         BOOST_ASSERT(sp);
 
         for (auto const& entry : entries) {
-          //std::cout << "[server] topic_filter: " << entry.topic_filter  << " qos: " << entry.subopts.get_qos() << std::endl;
           res.emplace_back(MQTT_NS::v5::qos_to_suback_reason_code(
               entry.subopts.get_qos()));
-          //subs.emplace(std::move(entry.topic_filter), sp, entry.subopts.get_qos());
           subs_.emplace(std::move(entry.topic_filter), sp,
                         entry.subopts.get_qos(), entry.subopts.get_rap());
-          //subs.emplace(entry.topic_filter, sp, entry.subopts.get_qos());
         }
 
         sp->suback(packet_id, res);
@@ -68,33 +64,14 @@ rpc_mqtt_server<Interface>::get_publish_handler(std::weak_ptr<con_t>& wp) {
         Log("[server] topic_name: " , topic_name);
         Log("[server] contents: " , contents);
 
-        /*
-        auto const& idx = subs.get<tag_topic>();
-        auto r = idx.equal_range(topic_name);
-        for (; r.first != r.second; ++r.first) {
-          auto retain = [&] {
-            if (r.first->rap_value == MQTT_NS::rap::retain) {
-              return pubopts.get_retain();
-            }
-            return MQTT_NS::retain::no;
-          }();
-          r.first->con->publish(
-              topic_name, contents,
-              std::min(r.first->qos_value, pubopts.get_qos()) | retain,
-              std::move(props));
-        }
-        */
-
-        //auto const response = this->template process_message(contents);
-        //auto x = contents.data()
         std::vector<unsigned char> dd(contents.begin(), contents.end());
-        //auto const response = this->process_message(contents.data());
         auto const response = this->process_message(dd);
         if(response) {
           auto shared_ptr_endpoint = wp.lock();
           BOOST_ASSERT(shared_ptr_endpoint);
           auto res_buf = response.value();
-          shared_ptr_endpoint->async_publish("topic1", std::string(begin(res_buf), end(res_buf)));
+          auto bb = MQTT_NS::allocate_buffer(res_buf.begin(), res_buf.end());
+          shared_ptr_endpoint->async_publish(topic_name, bb);
         }
 
 
@@ -121,11 +98,9 @@ rpc_mqtt_server<Interface>::get_connect_handler(std::weak_ptr<con_t>& wp) {
         Log("[server] clean_session: " , std::boolalpha , clean_session);
         Log("[server] keep_alive   : " , keep_alive);
 
-        //std::cout << "client connected!" << std::endl;
         auto sp = wp.lock();
         BOOST_ASSERT(sp);
         connections_.insert(sp);
-        //sp->connack(false, MQTT_NS::connect_return_code::accepted);
         sp->connack(false, MQTT_NS::v5::connect_reason_code::success);
 
         return true;
