@@ -4,7 +4,9 @@
 
 template <typename... Args>
 void Log(Args... args) {
+#ifdef CRPC_LOG
   (std::cout << ... << args) << std::endl;
+#endif
 }
 
 template <typename... Args>

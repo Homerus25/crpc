@@ -1,3 +1,5 @@
+#define CRPC_LOG
+
 #include "../benchmark_interface.h"
 #include "crpc/mqtt/rpc_mqtt_transport.h"
 

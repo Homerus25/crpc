@@ -1,3 +1,6 @@
+
+#define CRPC_LOG
+
 #include "../benchmark_interface.h"
 #include "crpc/http/rpc_http_client.h"
 
