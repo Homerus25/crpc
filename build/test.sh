@@ -1,61 +1,61 @@
 #!/bin/bash
-set -e
 
-cmake ..
-cmake  --build . --target crpc-http-ws-server crpc-http-client crpc-ws-client crpc-mqtt-server crpc-mqtt-client
+build() {
+  cmake ..
+  cmake  --build . --target crpc-http-ws-server crpc-http-client crpc-ws-client crpc-mqtt-server crpc-mqtt-client
+}
 
-# test websocket
-./crpc-http-ws-server &
-PIDserver=$!
+check() {
+  local exitCode=$1
+  local test=$2
+  if [ "$exitCode" != "0" ]; then
+        echo "Test $test failed!!!"
+        exit 1
+    fi
+}
 
-sleep 1
+test-websocket() {
+  ./crpc-http-ws-server &
+  local PIDserver=$!
+  sleep 1
 
-./crpc-ws-client
-ECws=$?
-kill $PIDserver
+  ./crpc-ws-client
+  local exitCode=$?
 
-if [ "$ECws" != "0" ]; then
-    echo "Test websocket failed!!!!!"
-    echo "Exit with: $ECws\n"
-    echo $ECws
-    exit -1
-fi
+  kill $PIDserver
 
+  check $exitCode "websocket"
+}
 
+test-http() {
+  ./crpc-http-ws-server &
+  local PIDserver=$!
+  sleep 1
 
-# test http
-./crpc-http-ws-server &
-PIDserver2=$!
+  ./crpc-http-client
+  local exitCode=$?
 
-sleep 1
+  kill $PIDserver
 
-./crpc-http-client
-EChttp=$?
-kill $PIDserver2
+  check $exitCode "http"
+}
 
-if [ "$EChttp" != "0" ]; then
-    echo "Test http failed!!!!!"
-    exit -1
-fi
+test-mqtt() {
+  ./crpc-mqtt-server 1 &
+  local PIDserver=$!
+  sleep 1
 
+  ./crpc-mqtt-client
+  local exitCode=$?
 
+  kill $PIDserver
 
+  check $exitCode "mqtt"
+}
 
-
-# test mqtt
-./crpc-mqtt-server 1 &
-PIDserver2=$!
-
-sleep 1
-
-./crpc-mqtt-client
-EChttp=$?
-kill $PIDserver2
-
-if [ "$EChttp" != "0" ]; then
-    echo "Test mqtt failed!!!!!"
-    exit -1
-fi
-
+build
+test-websocket
+test-http
+test-mqtt
 
 exit 0
