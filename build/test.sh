@@ -12,7 +12,7 @@ sleep 1
 ECws=$?
 kill $PIDserver
 
-if [ "$ECws" != "1" ]; then
+if [ "$ECws" != "0" ]; then
     echo "Test websocket failed!!!!!"
     echo "Exit with: $ECws\n"
     echo $ECws
@@ -31,7 +31,7 @@ sleep 1
 EChttp=$?
 kill $PIDserver2
 
-if [ "$EChttp" != "1" ]; then
+if [ "$EChttp" != "0" ]; then
     echo "Test http failed!!!!!"
     exit -1
 fi
@@ -50,7 +50,7 @@ sleep 1
 EChttp=$?
 kill $PIDserver2
 
-if [ "$EChttp" != "1" ]; then
+if [ "$EChttp" != "0" ]; then
     echo "Test mqtt failed!!!!!"
     exit -1
 fi
