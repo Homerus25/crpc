@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+
 cmake ..
 cmake  --build . --target crpc-http-ws-server crpc-http-client crpc-ws-client crpc-mqtt-server crpc-mqtt-client
 
