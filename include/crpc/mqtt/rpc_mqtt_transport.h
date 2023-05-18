@@ -8,8 +8,8 @@
 //#define BOOST_LOG_DYN_LINK
 
 #include "../message.h"
-#include "mqtt_cpp/include/mqtt_client_cpp.hpp"
-#include "mqtt_cpp/include/mqtt/setup_log.hpp"
+#include <mqtt_client_cpp.hpp>
+//#include <setup_log.hpp>
 
 #include "../ticket_store.h"
 

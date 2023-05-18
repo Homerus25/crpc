@@ -8,7 +8,7 @@
 #define MQTT_STD_OPTIONAL
 //#define MQTT_USE_LOG
 
-#include "mqtt_cpp/include/mqtt_server_cpp.hpp"
+#include <mqtt_server_cpp.hpp>
 //#include "mqtt_cpp/include/mqtt/setup_log.hpp"
 
 #include "mqtt_utils.h"

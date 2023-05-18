@@ -14,3 +14,7 @@
   url=git@github.com:motis-project/net.git
   branch=master
   commit=4fdd79d50481fdf642cb77bc92cdd4c68ddce040
+[mqtt_cpp]
+  url=git@github.com:redboltz/mqtt_cpp.git
+  branch=master
+  commit=6e624ae3967b517d6dd2870dcdbf53a819cb67f3

@@ -123,12 +123,11 @@ find_package(Threads REQUIRED)
 
 set(mqtt_cpp_iface_DIR mqtt_cpp)
 add_executable(crpc-mqtt-client test/mqtt/mqtt-client.cc include/crpc/mqtt/rpc_mqtt_transport.h)
-target_include_directories(crpc-mqtt-client PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/crpc/mqtt/mqtt_cpp/include Boost )
+target_include_directories(crpc-mqtt-client PUBLIC deps/mqtt_cpp/include  Boost)
 target_link_libraries(crpc-mqtt-client crpc Boost::log)
-#target_compile_options(crpc-client-mqtt PUBLIC "-pthread")
 
 add_executable(crpc-mqtt-server test/mqtt/mqtt-server.cc include/crpc/mqtt/rpc_mqtt_transport.h)
-target_include_directories(crpc-mqtt-server PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/crpc/mqtt/mqtt_cpp/include Boost )
+target_include_directories(crpc-mqtt-server PUBLIC deps/mqtt_cpp/include Boost)
 target_link_libraries(crpc-mqtt-server crpc Boost::log)
 
 ###############################
