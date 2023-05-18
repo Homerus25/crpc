@@ -17,14 +17,14 @@ struct ws_transport {
     client = std::make_unique<net::ws_client>(ioc_, url, std::to_string(port));
     client->run([&](boost::system::error_code ec) {
       if (ec) {
-        std::cout << "connect failed: " << ec.message() << "\n";
+        LogErr("connect failed: ", ec.message());
         return;
       }
-      std::cout << "connected\n";
+      Log("connected");
       pr.set_value();
     });
     client->on_fail([&](boost::system::error_code ec) {
-      std::cout << "fail " << ec.to_string() << std::endl;
+      LogErr("fail ", ec.to_string());
     });
 
     client->on_msg([&](std::string const& msg, bool /* binary */) {
@@ -40,13 +40,13 @@ struct ws_transport {
       if (status == std::future_status::ready) break;
       ioc_.poll();
     }
-    std::cout << "is connected" << std::endl;
+    Log("is connected");
   }
 
   std::future<std::vector<unsigned char>> send(unsigned fn_idx,
                                   std::vector<unsigned char> const& params) {
     std::string sp(params.begin(), params.end());
-    std::cout << "send params: " << sp << std::endl;
+    Log("send params: ", sp);
     message ms{
         ts_.nextNumber(), fn_idx,
         cista::offset::vector<unsigned char>(params.begin(), params.end())};
@@ -54,7 +54,7 @@ struct ws_transport {
 
     auto const ms_buf = cista::serialize(ms);
     auto const ms_string = std::string(begin(ms_buf), end(ms_buf));
-    std::cout << "send" << ms_string << std::endl;
+    Log("send", ms_string);
     boost::asio::post(ioc_,
         [=, this]() {
           client->send(ms_string, true);

@@ -22,7 +22,7 @@ struct http_transport {
     http_client_ = make_http(ios_, url_);
     http_client_->connect([](net::tcp::tcp_ptr, boost::system::error_code ec){
       if(ec)
-        std::cout << "error occured: " << ec << std::endl;
+        LogErr("error occured: ", ec);
     });
 
     ios_.poll();
