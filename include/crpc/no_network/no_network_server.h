@@ -12,8 +12,8 @@ struct no_network_server : public rpc_server<Interface> {
   explicit no_network_server() : ioc_(1), alive_(true) {}
 
   void receive(const std::vector<uint8_t> message, std::function<void(const std::vector<uint8_t>)> client) {
-    boost::asio::post(
-        [cl = client, ms = message, this](){
+    ioc_.post(
+        [cl = client, ms = std::move(message), this](){
       auto const response = this->process_message(ms);
       if(response)
         cl(std::move(response.value()));
@@ -21,18 +21,13 @@ struct no_network_server : public rpc_server<Interface> {
   }
 
   void run(int threads_count) {
-    std::vector<std::thread> thread_pool;
+    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> x
+        = boost::asio::make_work_guard(ioc_);
+
     for(int i=0; i<threads_count-1; ++i) {
-      thread_pool.emplace_back(std::thread([&]() {
-        while (alive_) ioc_.run();
-      }));
+      std::thread([this](){ioc_.run();}).detach();
     }
-
-    while(alive_) { ioc_.run(); }
-
-    for (auto& thread : thread_pool) {
-      thread.join();
-    }
+    ioc_.run();
   }
 
   void kill() {

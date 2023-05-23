@@ -7,9 +7,9 @@
 #include <vector>
 #include <functional>
 
-class benchmark {
+class benchmark_custom {
 public:
-  benchmark(int, std::function<void()>);
+  benchmark_custom(int, std::function<void()>);
 
   void wait_start();
 
@@ -29,7 +29,7 @@ private:
   bool all_waited;
 };
 
-benchmark::benchmark(int clients_count, std::function<void()> cf)
+benchmark_custom::benchmark_custom(int clients_count, std::function<void()> cf)
     //: start_point()
   //: start_point(clients_count)
   : arrived_threads(0)
@@ -66,7 +66,7 @@ benchmark::benchmark(int clients_count, std::function<void()> cf)
   }
 }
 
-void benchmark::wait_start() {
+void benchmark_custom::wait_start() {
   //this->start_point.arrive_and_wait();
   {
     std::unique_lock<std::shared_mutex> l(this->start_mutex);
@@ -76,7 +76,7 @@ void benchmark::wait_start() {
   start_cv.wait(l, [&]{ return this->all_waited; });
 }
 
-void benchmark::save_time(std::vector<std::chrono::milliseconds>& new_times) {
+void benchmark_custom::save_time(std::vector<std::chrono::milliseconds>& new_times) {
   std::lock_guard lg(this->save_mutex);
   rtts.reserve(rtts.size() + new_times.size());
   for(auto time : new_times) {

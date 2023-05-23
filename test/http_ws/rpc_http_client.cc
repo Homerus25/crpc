@@ -2,7 +2,7 @@
 #define CRPC_LOG
 
 #include "crpc/http/rpc_http_client.h"
-#include "../../example/benchmark_interface.h"
+#include "../../src/benchmark/benchmark_interface.h"
 
 int main(int argc, char* argv[]) {
   rpc_http_client<benchmark_interface> client{std::string("http://127.0.0.1:9000/"), 9000u};

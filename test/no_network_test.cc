@@ -20,12 +20,16 @@ TEST_CASE("no network test") {
     server.reg(&interface::hello_world_, [&]() { out << "hello world"; });
     server.reg(&interface::inc_count_, [&](int i) { return count += i; });
     server.reg(&interface::get_count_, [&]() { return count; });
+    auto st = std::thread([&](){ server.run(1); });
 
     no_network_client<interface> client{ [&](const std::vector<uint8_t> message, auto rcv) { server.receive(message, rcv); } };
+    client.run(1);
     CHECK(client.call(&interface::add_, 1, 2)() == 3);
     CHECK_NOTHROW(client.call(&interface::hello_world_)());
     CHECK(out.str() == "hello world");
     CHECK_NOTHROW(client.call(&interface::inc_count_, 5)());
     CHECK(client.call(&interface::get_count_)() == 5);
+    client.stop();
     server.kill();
+    st.join();
 }

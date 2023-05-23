@@ -25,8 +25,11 @@ link_directories(${Boost_LIBRARY_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIR} deps/net/include)
 #add_definitions(-DBOOST_ASIO_DISABLE_CONCEPTS=1)  # fixes issue with Boost 1.72.0
 
+set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "disable tests" FORCE)
+
 include(cmake/pkg.cmake)
 include_directories(deps/net)
+include_directories(deps/benchmark/include)
 
 
 ################################
@@ -123,7 +126,7 @@ find_package(Threads REQUIRED)
 
 set(mqtt_cpp_iface_DIR mqtt_cpp)
 add_executable(crpc-mqtt-client test/mqtt/mqtt-client.cc include/crpc/mqtt/rpc_mqtt_transport.h)
-target_include_directories(crpc-mqtt-client PUBLIC deps/mqtt_cpp/include  Boost)
+target_include_directories(crpc-mqtt-client PUBLIC deps/mqtt_cpp/include Boost)
 target_link_libraries(crpc-mqtt-client crpc Boost::log)
 
 add_executable(crpc-mqtt-server test/mqtt/mqtt-server.cc include/crpc/mqtt/rpc_mqtt_transport.h)

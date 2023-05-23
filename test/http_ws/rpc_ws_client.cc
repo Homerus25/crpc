@@ -1,7 +1,7 @@
 #define CRPC_LOG
 
 #include "crpc/http/rpc_ws_client.h"
-#include "../../example/benchmark_interface.h"
+#include "../../src/benchmark/benchmark_interface.h"
 
 int main(int argc, char* argv[]) {
   boost::asio::io_context ioc;

@@ -13,14 +13,11 @@
 #include "net/http/client/http_client.h"
 #include "net/tcp.h"
 
-using namespace net::http::client;
-
-
 struct http_transport {
   explicit http_transport(std::string url, unsigned int const port)
     : url_(std::move(url))
   {
-    http_client_ = make_http(ios_, url_);
+    http_client_ = net::http::client::make_http(ios_, url_);
     http_client_->connect([](net::tcp::tcp_ptr, boost::system::error_code ec){
       if(ec)
         LogErr("error occured: ", ec);
@@ -45,16 +42,16 @@ struct http_transport {
 
     auto const ms_buf = cista::serialize(ms);
     auto const ms_string = std::string(begin(ms_buf), end(ms_buf));
-      request req{
+    net::http::client::request req{
           url_,
-          request::method::GET,
+        net::http::client::request::method::GET,
           {},
           ms_string
       };
 
       //http_client_
-      make_http(ios_, url_)
-          ->query(req, [this](std::shared_ptr<net::tcp>, response const& res, boost::system::error_code ec) {
+    net::http::client::make_http(ios_, url_)
+          ->query(req, [this](std::shared_ptr<net::tcp>, net::http::client::response const& res, boost::system::error_code ec) {
             if (ec) {
               std::cout << "error: " << ec.message() << "\n";
             } else {
@@ -75,7 +72,7 @@ private:
   boost::asio::io_service ios_;
   ticket_store ts_;
   const std::string url_;
-  std::shared_ptr<http> http_client_;
+  std::shared_ptr<net::http::client::http> http_client_;
 };
 
 template<typename Interface>

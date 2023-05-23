@@ -20,23 +20,34 @@ struct no_network_transport {
     auto future = ts_.emplace(ms.ticket_);
 
     auto const ms_buf = cista::serialize(ms);
-    this->recv_(ms_buf, [&](const std::vector<uint8_t> ms){ this->receive(ms); });
+    this->recv_(ms_buf, [this](const std::vector<uint8_t> ms){ this->receive(ms); });
 
     return future;
   }
 
-  void receive(const std::vector<uint8_t> response) {
-    const auto* ms = cista::deserialize<message>(response);
-    ts_.setValue(ms->ticket_, ms->payload_);
+  void receive(const std::vector<uint8_t>& response) {
+    ioc_.post([response, this](){
+      const auto* ms = cista::deserialize<message>(response);
+      ts_.setValue(ms->ticket_, ms->payload_);
+    });
   }
 
-  auto& get_times() {
-    return ts_.get_times();
+  void run(int thread_count) {
+    work_guard_ = std::make_unique<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>(boost::asio::make_work_guard(ioc_));
+    for(int i=0; i<thread_count; ++i) {
+      std::thread([this](){ioc_.run();}).detach();
+    }
+  }
+
+  void stop() {
+    ioc_.stop();
   }
 
   private:
+    boost::asio::io_context ioc_;
     std::function<void(const std::vector<uint8_t>, std::function<void(const std::vector<uint8_t>)>)> recv_;
     ticket_store ts_;
+    std::unique_ptr<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_guard_;
 };
 
 template <typename Interface>

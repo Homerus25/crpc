@@ -1,4 +1,4 @@
-#include "../../example/benchmark_interface.h"
+#include "../../src/benchmark/benchmark_interface.h"
 #include "crpc/mqtt/rpc_mqtt_server.h"
 
 int main(int argc, char* argv[]) {

@@ -18,3 +18,6 @@
   url=git@github.com:redboltz/mqtt_cpp.git
   branch=master
   commit=6e624ae3967b517d6dd2870dcdbf53a819cb67f3
+[benchmark]
+  url=git@github.com:google/benchmark.git
+  branch=main
