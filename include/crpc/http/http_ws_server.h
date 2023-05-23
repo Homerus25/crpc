@@ -17,6 +17,8 @@ class http_ws_server : public rpc_server<Interface>  {
 public:
   http_ws_server(boost::asio::io_context& ioc_) {
     webs_ = std::unique_ptr<web_server>(new web_server{ioc_});
+    webs_->set_request_queue_limit(10000);
+    //webs_->set_request_body_limit(1024 * 1024 * 4);
 
     webs_->on_ws_msg([this](ws_session_ptr const& s, std::string const& msg,
                         ws_msg_type type) {
@@ -46,12 +48,12 @@ public:
 
     webs_->on_http_request([this](web_server::http_req_t const& req,
                                  web_server::http_res_cb_t const& cb, bool ssl) {
-      auto x = req.body();
-      Log("got ms: ", req.body());
+      boost::ignore_unused(ssl);
+      //Log("got ms: ", req.body());
       auto response = this->process_message(req.body());
       if (response.has_value()) {
         std::string resMs(response.value().begin(), response.value().end());
-        return cb(string_response(req, resMs));
+        return cb(string_response(req, resMs, boost::beast::http::status::ok, std::string_view()));
       }
       return cb(empty_response(req, boost::beast::http::status::ok, std::string_view()));
     });

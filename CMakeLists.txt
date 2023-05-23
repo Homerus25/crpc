@@ -114,6 +114,14 @@ target_link_libraries(crpc-client-benchmark crpc)
 add_executable(crpc-no-network-benchmark example/no_network/no_network.cc)
 target_link_libraries(crpc-no-network-benchmark crpc)
 
+
+# benchmark
+add_executable(crpc-benchmark src/benchmark/benchmark.cc)
+target_include_directories(crpc-benchmark PUBLIC deps/benchmark/include)
+target_link_libraries(crpc-benchmark crpc benchmark web-server http-client)
+
+
+# mqtt
 #######
 
 #add_subdirectory(include/crpc/mqtt_cpp)

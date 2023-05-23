@@ -9,7 +9,7 @@
 
 template <typename Interface>
 struct no_network_server : public rpc_server<Interface> {
-  explicit no_network_server() : ioc_(1), alive_(true) {}
+  explicit no_network_server(boost::asio::io_context& ioc) : ioc_(ioc) {}
 
   void receive(const std::vector<uint8_t> message, std::function<void(const std::vector<uint8_t>)> client) {
     ioc_.post(
@@ -30,12 +30,10 @@ struct no_network_server : public rpc_server<Interface> {
     ioc_.run();
   }
 
-  void kill() {
-    alive_.store(false);
+  void stop() {
     ioc_.stop();
   }
 
 private:
-  boost::asio::io_context ioc_;
-  std::atomic_bool alive_;
+  boost::asio::io_context& ioc_;
 };

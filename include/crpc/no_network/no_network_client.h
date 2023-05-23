@@ -9,7 +9,11 @@
 
 struct no_network_transport {
   explicit no_network_transport(std::function<void(const std::vector<uint8_t>, std::function<void(const std::vector<uint8_t>)>)> recv)
-      : recv_{recv} {}
+      : recv_{recv} {
+
+    work_guard_ = std::make_unique<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>(boost::asio::make_work_guard(ioc_));
+    std::thread([this](){ioc_.run();}).detach();
+  }
 
   std::future<std::vector<unsigned char>> send(unsigned fn_idx,
                                                std::vector<unsigned char> const& params) {
@@ -30,13 +34,6 @@ struct no_network_transport {
       const auto* ms = cista::deserialize<message>(response);
       ts_.setValue(ms->ticket_, ms->payload_);
     });
-  }
-
-  void run(int thread_count) {
-    work_guard_ = std::make_unique<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>(boost::asio::make_work_guard(ioc_));
-    for(int i=0; i<thread_count; ++i) {
-      std::thread([this](){ioc_.run();}).detach();
-    }
   }
 
   void stop() {

@@ -15,22 +15,9 @@
 
 struct http_transport {
   explicit http_transport(std::string url, unsigned int const port)
-    : url_(std::move(url))
+    : url_(std::move(url)), work_guard_(boost::asio::make_work_guard(ios_))
   {
-    http_client_ = net::http::client::make_http(ios_, url_);
-    http_client_->connect([](net::tcp::tcp_ptr, boost::system::error_code ec){
-      if(ec)
-        LogErr("error occured: ", ec);
-    });
-
-    ios_.poll();
-
-    std::thread t1([&](){
-      boost::asio::executor_work_guard<boost::asio::io_context::executor_type> x
-          = boost::asio::make_work_guard(ios_);
-      ios_.run();
-    });
-    t1.detach();
+    runner_ = std::thread([&](){ ios_.run(); });
   }
 
   std::future<std::vector<unsigned char>> send(unsigned fn_idx,
@@ -45,12 +32,11 @@ struct http_transport {
     net::http::client::request req{
           url_,
         net::http::client::request::method::GET,
-          {},
+        net::http::client::request::str_map(),
           ms_string
       };
 
-      //http_client_
-    net::http::client::make_http(ios_, url_)
+      net::http::client::make_http(ios_, url_)
           ->query(req, [this](std::shared_ptr<net::tcp>, net::http::client::response const& res, boost::system::error_code ec) {
             if (ec) {
               std::cout << "error: " << ec.message() << "\n";
@@ -65,14 +51,17 @@ struct http_transport {
   }
 
   void stop() {
+    work_guard_.reset();
     ios_.stop();
+    runner_.join();
   }
 
 private:
   boost::asio::io_service ios_;
   ticket_store ts_;
-  const std::string url_;
-  std::shared_ptr<net::http::client::http> http_client_;
+  std::string url_;
+  std::thread runner_;
+  boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_guard_;
 };
 
 template<typename Interface>
