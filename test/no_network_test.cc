@@ -14,16 +14,19 @@ TEST_CASE("no network test") {
     };
 
     int count = 0;
-    auto server = no_network_server<interface>();
+    boost::asio::io_context server_ioc;
+    auto server = no_network_server<interface>(server_ioc);
     std::stringstream out;
     server.reg(&interface::add_, [](int a, int b) { return a + b; });
     server.reg(&interface::hello_world_, [&]() { out << "hello world"; });
     server.reg(&interface::inc_count_, [&](int i) { return count += i; });
     server.reg(&interface::get_count_, [&]() { return count; });
+    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> x
+        = boost::asio::make_work_guard(server_ioc);
     auto st = std::thread([&](){ server.run(1); });
 
     no_network_client<interface> client{ [&](const std::vector<uint8_t> message, auto rcv) { server.receive(message, rcv); } };
-    client.run(1);
+
     CHECK(client.call(&interface::add_, 1, 2)() == 3);
     CHECK_NOTHROW(client.call(&interface::hello_world_)());
     CHECK(out.str() == "hello world");

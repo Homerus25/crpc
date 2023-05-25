@@ -40,7 +40,6 @@ public:
     template <typename ReturnType, typename... Args>
     return_object<ReturnType> call(fn<ReturnType, Args...> Interface::*const member_ptr,
                     Args&&... args) {
-        std::promise<return_object<ReturnType>> promise;
         std::future<std::vector<unsigned char>> response;
         if constexpr (sizeof...(Args) == 0U) {
             response = Transport::send(index_of_member(member_ptr), {});

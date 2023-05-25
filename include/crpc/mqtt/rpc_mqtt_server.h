@@ -28,6 +28,8 @@ public:
   void run(int threads_count);
   void stop() {
     server.close();
+    for(auto& t: runner)
+      t.join();
   }
   void block() {
     ioc.run();
@@ -51,6 +53,7 @@ private:
   std::uint16_t port_;
   boost::asio::io_context ioc;
   MQTT_NS::server<> server;
+  std::vector<std::thread> runner;
 };
 
 #include "mqtt_server_handler.h"
@@ -59,7 +62,7 @@ template<typename Interface>
 void rpc_mqtt_server<Interface>::run(int threads_count)
 {
   for(int i=0; i<threads_count; ++i)
-    std::thread([&](){ ioc.run(); }).detach();
+    runner.emplace_back([&](){ ioc.run(); });
 }
 
 template<typename Interface>

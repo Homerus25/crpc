@@ -58,10 +58,11 @@ private:
 
   using MQTT_CO = mqtt::callable_overlay<mqtt::client<mqtt::tcp_endpoint<boost::asio::ip::tcp::socket, mqtt::strand>>>;
   using packet_id_t = typename std::remove_reference_t<MQTT_CO>::packet_id_t;
-  std::shared_ptr<MQTT_CO> mqtt_client_;
+
   ticket_store ts_;
   boost::asio::io_context ioc_;
   std::thread runner;
+  std::shared_ptr<MQTT_CO> mqtt_client_;
 
   void set_handler() {
     mqtt_client_->set_v5_connack_handler( get_connack_handler());

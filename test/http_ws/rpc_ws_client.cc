@@ -4,15 +4,7 @@
 #include "../../src/benchmark/benchmark_interface.h"
 
 int main(int argc, char* argv[]) {
-  boost::asio::io_context ioc;
-  rpc_ws_client<benchmark_interface> client{ioc, std::string("127.0.0.1"), 9000u};
-
-  ioc.poll();
-  std::thread t1([&](){
-    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> x
-        = boost::asio::make_work_guard(ioc);
-    ioc.run();
-  });
+  rpc_ws_client<benchmark_interface> client{std::string("127.0.0.1"), 9000u};
 
   std::string testStr("Hello Big Data Echo");
 
@@ -33,8 +25,5 @@ int main(int argc, char* argv[]) {
   if (testStr != echoback)
     return 1;
 
-
-  ioc.stop();
-  t1.join();
   return 0;
 }
