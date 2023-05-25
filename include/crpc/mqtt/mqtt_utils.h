@@ -41,6 +41,7 @@ using mi_sub_con = mi::multi_index_container<
     >;
 
 inline void close_proc(std::set<con_sp_t>& cons, mi_sub_con& subs, con_sp_t const& con) {
+  con->disconnect();
   cons.erase(con);
 
   auto& idx = subs.get<tag_con>();

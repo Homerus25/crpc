@@ -106,6 +106,7 @@ rpc_mqtt_server<Interface>::get_connect_handler(std::weak_ptr<con_t>& wp) {
         return true;
       };
 }
+
 template <typename Interface>
 rpc_mqtt_server<Interface>::MQTT_CO::error_handler
 rpc_mqtt_server<Interface>::get_error_handler(std::weak_ptr<con_t>& wp) {

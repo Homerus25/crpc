@@ -93,7 +93,7 @@ rpc_mqtt_transport::get_connack_handler() {
     Log("[client] Session Present: " , std::boolalpha , sp);
     Log("[client] Connect Reason Code: " , reason_code);
     if (reason_code == MQTT_NS::v5::connect_reason_code::success) {
-      pid_sub1 = mqtt_client_->subscribe(topic, MQTT_NS::qos::at_most_once);
+      mqtt_client_->subscribe(topic, MQTT_NS::qos::at_most_once);
     }
     return true;
   };

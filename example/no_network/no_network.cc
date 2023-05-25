@@ -21,6 +21,6 @@ int main(int argc, char* argv[]) {
     bench.save_time(client.get_times());
   });
 
-  server.kill();
+  server.stop();
   st.join();
 }

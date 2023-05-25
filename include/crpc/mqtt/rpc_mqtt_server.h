@@ -18,10 +18,20 @@ template <typename Interface>
 class rpc_mqtt_server : public rpc_server<Interface> {
 public:
   explicit rpc_mqtt_server(std::uint16_t port)
-      : port_(port)
-  {}
+      : port_(port),
+        server(MQTT_NS::server<>(boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(),port_),ioc))
+  {
+    set_handler(server);
+    server.listen();
+  }
 
   void run(int threads_count);
+  void stop() {
+    server.close();
+  }
+  void block() {
+    ioc.run();
+  }
 
 private:
   using MQTT_CO = MQTT_NS::callable_overlay<MQTT_NS::server_endpoint<std::mutex, std::lock_guard,2>>;
@@ -39,6 +49,8 @@ private:
   std::set<con_sp_t> connections_;
   mi_sub_con subs_;
   std::uint16_t port_;
+  boost::asio::io_context ioc;
+  MQTT_NS::server<> server;
 };
 
 #include "mqtt_server_handler.h"
@@ -46,28 +58,8 @@ private:
 template<typename Interface>
 void rpc_mqtt_server<Interface>::run(int threads_count)
 {
-  boost::asio::io_context ioc;
-
-  auto server = MQTT_NS::server<>(
-      boost::asio::ip::tcp::endpoint(
-          boost::asio::ip::tcp::v4(),
-          port_
-      ),
-      ioc
-  );
-
-
-  set_handler(server);
-
-  server.listen();
-
-  std::vector<std::thread> thread_pool;
-  for(int i=0; i<threads_count-1; ++i)
-    thread_pool.emplace_back(std::thread([&](){ ioc.run(); }));
-
-  ioc.run();
-  for (auto& thread : thread_pool)
-    thread.join();
+  for(int i=0; i<threads_count; ++i)
+    std::thread([&](){ ioc.run(); }).detach();
 }
 
 template<typename Interface>

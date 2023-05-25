@@ -16,10 +16,9 @@
 #include "../log.h"
 
 struct rpc_mqtt_transport {
-    explicit rpc_mqtt_transport(boost::asio::io_context& ioc, std::string const& name, std::uint16_t port)
-    : ioc_(ioc)
+    explicit rpc_mqtt_transport( std::string const& name, std::uint16_t port)
     {
-      mqtt_client_ = mqtt::make_client(ioc, name, port, mqtt::protocol_version::v5);
+      mqtt_client_ = mqtt::make_client(ioc_, name, port, mqtt::protocol_version::v5);
 
       mqtt_client_->set_client_id("cid1");
       mqtt_client_->set_clean_start(true);
@@ -27,6 +26,7 @@ struct rpc_mqtt_transport {
       set_handler();
 
       mqtt_client_->connect();
+      runner = std::thread([&](){ ioc_.run(); });
   }
 
   std::future<std::vector<unsigned char>> send(unsigned fn_idx,
@@ -38,15 +38,18 @@ struct rpc_mqtt_transport {
 
     auto const ms_buf = cista::serialize(ms);
     auto const ms_string = std::string(begin(ms_buf), end(ms_buf));
-    //mqtt_client_->publish(topic, ms_string);
     mqtt_client_->async_publish(topic, ms_string);
 
     return future;
   }
 
   void close_connection() {
-    mqtt_client_->unsubscribe(topic);
-    mqtt_client_->disconnect(std::chrono::seconds(1));
+    mqtt_client_->disconnect();
+  }
+
+  void stop() {
+    close_connection();
+    runner.join();
   }
 
 private:
@@ -57,12 +60,12 @@ private:
   using packet_id_t = typename std::remove_reference_t<MQTT_CO>::packet_id_t;
   std::shared_ptr<MQTT_CO> mqtt_client_;
   ticket_store ts_;
-  boost::asio::io_context &ioc_;
-  uint16_t pid_sub1;
+  boost::asio::io_context ioc_;
+  std::thread runner;
 
   void set_handler() {
     mqtt_client_->set_v5_connack_handler( get_connack_handler());
-    mqtt_client_->set_close_handler([] {
+    mqtt_client_->set_close_handler([&] {
       Log("closed!");
     });
     mqtt_client_->set_error_handler(
@@ -75,6 +78,9 @@ private:
 
     mqtt_client_->set_v5_suback_handler(get_suback_handler());
     mqtt_client_->set_v5_publish_handler(get_publish_handler());
+    mqtt_client_->set_v5_disconnect_handler([](MQTT_NS::v5::disconnect_reason_code reason_code, MQTT_NS::v5::properties props) {
+      Log("disconnected");
+    });
   }
 
   MQTT_CO::v5_connack_handler get_connack_handler();
@@ -83,7 +89,7 @@ private:
   MQTT_CO::v5_pubcomp_handler get_pubcomp_handler() const;
   static MQTT_CO::v5_suback_handler get_suback_handler();
   MQTT_CO::v5_publish_handler get_publish_handler();
-} __attribute__((aligned(128))) __attribute__((packed));
+};// __attribute__((aligned(128))) __attribute__((packed));
 
 #include "mqtt_client_handler.h"
 

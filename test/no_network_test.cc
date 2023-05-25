@@ -30,6 +30,6 @@ TEST_CASE("no network test") {
     CHECK_NOTHROW(client.call(&interface::inc_count_, 5)());
     CHECK(client.call(&interface::get_count_)() == 5);
     client.stop();
-    server.kill();
+    server.stop();
     st.join();
 }

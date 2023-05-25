@@ -22,6 +22,6 @@ int main(int argc, char* argv[]) {
   std::cout << client.call(&benchmark_interface::average, data::vector<double>({10.0, 100.0, 20.0}))();
 
   client.stop();
-  server.kill();
+  server.stop();
   st.join();
 }

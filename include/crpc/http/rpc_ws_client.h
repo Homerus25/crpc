@@ -12,7 +12,7 @@
 #include <memory>
 
 struct ws_transport {
-  explicit ws_transport(boost::asio::io_context& io, std::string const& url, unsigned int const port) :ioc_(io)
+  explicit ws_transport(std::string const& url, unsigned int const port)
   {
     std::promise<void> pr;
     client = std::make_unique<net::ws_client>(ioc_, url, std::to_string(port));
@@ -42,6 +42,12 @@ struct ws_transport {
       ioc_.poll();
     }
     Log("is connected");
+
+    std::thread([&](){
+      boost::asio::executor_work_guard<boost::asio::io_context::executor_type> x
+          = boost::asio::make_work_guard(ioc_);
+      ioc_.run();
+    }).detach();
   }
 
   std::future<std::vector<unsigned char>> send(unsigned fn_idx,
@@ -65,8 +71,12 @@ struct ws_transport {
     return future;
   }
 
+  void stop() {
+    ioc_.stop();
+  }
+
 private:
-  boost::asio::io_context& ioc_;
+  boost::asio::io_context ioc_;
   std::unique_ptr<net::ws_client> client;
   ticket_store ts_;
 };

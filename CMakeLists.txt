@@ -114,10 +114,12 @@ target_link_libraries(crpc-client-benchmark crpc)
 add_executable(crpc-no-network-benchmark example/no_network/no_network.cc)
 target_link_libraries(crpc-no-network-benchmark crpc)
 
+find_package(Threads REQUIRED)
+set(mqtt_cpp_iface_DIR mqtt_cpp)
 
 # benchmark
-add_executable(crpc-benchmark src/benchmark/benchmark.cc)
-target_include_directories(crpc-benchmark PUBLIC deps/benchmark/include)
+add_executable(crpc-benchmark src/benchmark/benchmark.cc include/crpc/mqtt/rpc_mqtt_transport.h)
+target_include_directories(crpc-benchmark PUBLIC deps/benchmark/include deps/mqtt_cpp/include)
 target_link_libraries(crpc-benchmark crpc benchmark web-server http-client)
 
 
@@ -130,9 +132,9 @@ target_link_libraries(crpc-benchmark crpc benchmark web-server http-client)
 #add_compile_definitions(crpc-client-mqtt "-lboost_log -lboost_filesystem -lboost_thread")
 #add_link_options(crpc-client-mqtt "-lboost_log -lboost_filesystem -lboost_thread")
 
-find_package(Threads REQUIRED)
 
-set(mqtt_cpp_iface_DIR mqtt_cpp)
+
+
 add_executable(crpc-mqtt-client test/mqtt/mqtt-client.cc include/crpc/mqtt/rpc_mqtt_transport.h)
 target_include_directories(crpc-mqtt-client PUBLIC deps/mqtt_cpp/include Boost)
 target_link_libraries(crpc-mqtt-client crpc Boost::log)
