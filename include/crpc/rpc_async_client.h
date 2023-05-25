@@ -9,6 +9,10 @@
 
 #include "cista/serialization.h"
 
+#include "message.h"
+#include "ticket_store.h"
+#include "receiver.h"
+
 template<typename ReturnType>
 class return_object {
 public:
@@ -30,24 +34,46 @@ private:
 };
 
 template <typename Transport, typename Interface>
-class rpc_async_client : public Transport {
+class rpc_async_client {
 public:
     template <typename... Args>
     rpc_async_client(Args&&... args)  // NOLINT
-    : Transport{std::forward<Args>(args)...} {}
+    : transport{std::move(Receiver(ts_)), std::forward<Args>(args)...} {}
 
 
     template <typename ReturnType, typename... Args>
     return_object<ReturnType> call(fn<ReturnType, Args...> Interface::*const member_ptr,
                     Args&&... args) {
         std::future<std::vector<unsigned char>> response;
-        if constexpr (sizeof...(Args) == 0U) {
-            response = Transport::send(index_of_member(member_ptr), {});
-        } else {
-            auto const params = std::make_tuple(std::forward<Args>(args)...);
-            response = Transport::send(index_of_member(member_ptr),
-                                       cista::serialize(params));
-        }
+        response = sendMS(index_of_member(member_ptr), args...);
         return return_object<ReturnType>(response);
     }
+
+    template < typename... Args>
+    std::future<std::vector<unsigned char>> sendMS(unsigned fn_idx,
+                                                 Args&&... args) {
+
+        auto ticket_num = this->ts_.nextNumber();
+        auto future = this->ts_.emplace(ticket_num);
+        auto tup = std::make_tuple(std::forward<Args>(args)...);
+
+        auto conTup = cista::serialize<cista::mode::UNCHECKED>(tup);
+        cista::offset::vector<unsigned char> conTup2 (conTup.begin(), conTup.end());
+
+        message ms{
+            ticket_num, fn_idx,
+            conTup2
+        };
+        std::vector<unsigned char> ms_buf;
+        ms_buf = cista::serialize<cista::mode::UNCHECKED>(ms);
+        transport.send(ms_buf);
+        return future;
+    }
+
+    void stop() {
+        transport.stop();
+    }
+  private:
+    Transport transport;
+    ticket_store ts_;
 };

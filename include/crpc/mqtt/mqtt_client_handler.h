@@ -57,8 +57,7 @@ rpc_mqtt_transport::get_publish_handler() {
         Log("[client] contents: " , contents);
 
         std::vector<unsigned char> dd(contents.begin(), contents.end());
-        auto ms = cista::deserialize<message>(dd);
-        this->ts_.setValue(ms->ticket_, ms->payload_);
+        receiver.processAnswer(dd);
 
         return true;
       };

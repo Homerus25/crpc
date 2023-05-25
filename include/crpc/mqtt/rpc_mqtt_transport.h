@@ -1,22 +1,18 @@
 #pragma once
 
-#include "../rpc_async_client.h"
-
 #define MQTT_STD_VARIANT
 #define MQTT_STD_OPTIONAL
 //#define MQTT_USE_LOG
 //#define BOOST_LOG_DYN_LINK
 
-#include "../message.h"
 #include <mqtt_client_cpp.hpp>
-//#include <setup_log.hpp>
-
-#include "../ticket_store.h"
 
 #include "../log.h"
+#include "../receiver.h"
 
 struct rpc_mqtt_transport {
-    explicit rpc_mqtt_transport( std::string const& name, std::uint16_t port)
+    explicit rpc_mqtt_transport(Receiver rec, std::string const& name, std::uint16_t port)
+      : receiver(rec)
     {
       mqtt_client_ = mqtt::make_client(ioc_, name, port, mqtt::protocol_version::v5);
 
@@ -29,18 +25,8 @@ struct rpc_mqtt_transport {
       runner = std::thread([&](){ ioc_.run(); });
   }
 
-  std::future<std::vector<unsigned char>> send(unsigned fn_idx,
-                                               std::vector<unsigned char> const& params) {
-    message ms{
-        ts_.nextNumber(), fn_idx,
-        cista::offset::vector<unsigned char>(params.begin(), params.end())};
-    auto future = ts_.emplace(ms.ticket_);
-
-    auto const ms_buf = cista::serialize(ms);
-    auto const ms_string = std::string(begin(ms_buf), end(ms_buf));
-    mqtt_client_->async_publish(topic, ms_string);
-
-    return future;
+  void send(std::vector<unsigned char> ms_buf) {
+      mqtt_client_->publish(0, MQTT_NS::allocate_buffer(topic), MQTT_NS::allocate_buffer(ms_buf.begin(), ms_buf.end()));
   }
 
   void close_connection() {
@@ -50,16 +36,16 @@ struct rpc_mqtt_transport {
   void stop() {
     close_connection();
     runner.join();
+    ioc_.stop();
   }
 
 private:
-
+  Receiver receiver;
   const std::string topic = "mqtt_client_cpp/topic1";
 
   using MQTT_CO = mqtt::callable_overlay<mqtt::client<mqtt::tcp_endpoint<boost::asio::ip::tcp::socket, mqtt::strand>>>;
   using packet_id_t = typename std::remove_reference_t<MQTT_CO>::packet_id_t;
 
-  ticket_store ts_;
   boost::asio::io_context ioc_;
   std::thread runner;
   std::shared_ptr<MQTT_CO> mqtt_client_;

@@ -12,7 +12,8 @@
 #include <memory>
 
 struct ws_transport {
-  explicit ws_transport(std::string const& url, unsigned int const port)
+  explicit ws_transport(Receiver rec, std::string const& url, unsigned int const port)
+      : receiver(rec)
   {
     std::promise<void> pr;
     client = std::make_unique<net::ws_client>(ioc_, url, std::to_string(port));
@@ -29,9 +30,8 @@ struct ws_transport {
     });
 
     client->on_msg([&](std::string const& msg, bool /* binary */) {
-      cista::offset::vector<unsigned char> dd(msg.begin(), msg.end());
-      auto ms = cista::deserialize<message>(dd);
-      this->ts_.setValue(ms->ticket_, ms->payload_);
+      std::vector<unsigned char> dd(msg.begin(), msg.end());
+      receiver.processAnswer(dd);
     });
 
     auto fut = pr.get_future();
@@ -50,25 +50,13 @@ struct ws_transport {
     }).detach();
   }
 
-  std::future<std::vector<unsigned char>> send(unsigned fn_idx,
-                                  std::vector<unsigned char> const& params) {
-    std::string sp(params.begin(), params.end());
-    Log("send params: ", sp);
-    message ms{
-        ts_.nextNumber(), fn_idx,
-        cista::offset::vector<unsigned char>(params.begin(), params.end())};
-    auto future = ts_.emplace(ms.ticket_);
-
-    auto const ms_buf = cista::serialize(ms);
+  void send(std::vector<unsigned char> ms_buf) {
     auto const ms_string = std::string(begin(ms_buf), end(ms_buf));
-    Log("send", ms_string);
     boost::asio::post(ioc_,
-        [=, this]() {
-          client->send(ms_string, true);
-        }
-        );
-
-    return future;
+                      [=, this]() {
+                        client->send(ms_string, true);
+                      }
+    );
   }
 
   void stop() {
@@ -76,6 +64,7 @@ struct ws_transport {
   }
 
 private:
+  Receiver receiver;
   boost::asio::io_context ioc_;
   std::unique_ptr<net::ws_client> client;
   ticket_store ts_;
