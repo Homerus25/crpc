@@ -8,43 +8,35 @@
 #include "no_network_server.h"
 
 struct no_network_transport {
-  explicit no_network_transport(std::function<void(const std::vector<uint8_t>, std::function<void(const std::vector<uint8_t>)>)> recv)
-      : recv_{recv} {
+  explicit no_network_transport(Receiver rec, std::function<void(const std::vector<uint8_t>, std::function<void(const std::vector<uint8_t>)>)> recv)
+      : receiver(rec), recv_{recv} {
 
     work_guard_ = std::make_unique<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>(boost::asio::make_work_guard(ioc_));
-    std::thread([this](){ioc_.run();}).detach();
+    runner = std::thread([&](){ ioc_.run();});
   }
 
-  std::future<std::vector<unsigned char>> send(unsigned fn_idx,
-                                               std::vector<unsigned char> const& params) {
-    message ms {
-        ts_.nextNumber(), fn_idx,
-        cista::offset::vector<unsigned char>(params.begin(), params.end())};
-
-    auto future = ts_.emplace(ms.ticket_);
-
-    auto const ms_buf = cista::serialize(ms);
+  void send(std::vector<unsigned char> ms_buf) {
     this->recv_(ms_buf, [this](const std::vector<uint8_t> ms){ this->receive(ms); });
-
-    return future;
   }
 
   void receive(const std::vector<uint8_t>& response) {
-    ioc_.post([response, this](){
-      const auto* ms = cista::deserialize<message>(response);
-      ts_.setValue(ms->ticket_, ms->payload_);
+    std::shared_ptr<std::vector<uint8_t>> ptr = std::make_shared<std::vector<uint8_t>>(std::move(response));
+    ioc_.post([this, ptr](){
+      receiver.processAnswer(*ptr);
     });
   }
 
   void stop() {
-    ioc_.stop();
+    work_guard_.reset();
+    runner.join();
   }
 
   private:
+    Receiver receiver;
     boost::asio::io_context ioc_;
     std::function<void(const std::vector<uint8_t>, std::function<void(const std::vector<uint8_t>)>)> recv_;
-    ticket_store ts_;
     std::unique_ptr<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_guard_;
+    std::thread runner;
 };
 
 template <typename Interface>

@@ -4,6 +4,8 @@
 #include "crpc/no_network/no_network_client.h"
 #include "crpc/no_network/no_network_server.h"
 
+#define WORK_ITERATIONS 1024
+
 template<int funcNum>
 auto benchmarkFunction(auto& client) {
   if constexpr (funcNum == 0)
@@ -59,14 +61,14 @@ static void BM_NoNetwork(benchmark::State& state) {
 #include "crpc/http/rpc_http_client.h"
 
 template <int funcNum>
-void doBench(benchmark::State& state, auto& clients) {
+void doBench(auto& state, auto& clients) {
   std::vector<std::future<void>> clientRes;
   clientRes.reserve(clients.size());
 
   for (auto _ : state) {
     for(auto& client : clients) {
       clientRes.push_back(std::async(std::launch::async, [&client]() {
-        constexpr int iterations = 100;
+        constexpr int iterations = WORK_ITERATIONS;
         std::vector<decltype(benchmarkFunction<funcNum>(client))> resp;
         resp.reserve(iterations);
         for (int i = 0; i < iterations; ++i) {
@@ -88,6 +90,38 @@ void doBench(benchmark::State& state, auto& clients) {
   for (auto& client:clients)
     client->stop();
 }
+
+
+template <int funcNum>
+static void BM_NoNetwork(benchmark::State& state) {
+  const int server_concurrency = state.range(0);
+  const int client_concurrency = state.range(1);
+
+  // start server
+  auto server = no_network_server<benchmark_interface>(/*server_ioc*/);
+  register_benchmark_interface(server);
+  server.run(server_concurrency);
+
+  // build clients
+  std::vector<std::unique_ptr<no_network_client<benchmark_interface>>> clients;
+  std::function<void(const std::vector<uint8_t>, std::function<void(const std::vector<uint8_t>)>)> const transportLambda = [&server](const std::vector<uint8_t>& message, auto rcv) { server.receive(std::move(message), rcv); };
+  for(int i=0; i<client_concurrency; ++i) {
+    clients.push_back(std::make_unique<no_network_client<benchmark_interface>>(transportLambda));
+  }
+
+  doBench<funcNum>(state, clients);
+
+  server.stop();
+
+  state.counters["Requests"] = client_concurrency * WORK_ITERATIONS;
+  state.counters["Req_per_second"] = benchmark::Counter(client_concurrency * WORK_ITERATIONS, benchmark::Counter::kIsRate);
+}
+
+
+#include "crpc/http/http_ws_server.h"
+#include "crpc/http/rpc_http_client.h"
+
+
 
 
 template <int funcNum>
@@ -131,7 +165,6 @@ static void BM_WS(benchmark::State& state) {
   // build clients
   std::vector<std::unique_ptr<rpc_ws_client<benchmark_interface>>> clients;
   for(int i=0; i<client_concurrency; ++i) {
-    boost::asio::io_context ioc;
     clients.push_back(std::make_unique<rpc_ws_client<benchmark_interface>>("127.0.0.1", 9000u));
   }
 
@@ -147,7 +180,7 @@ static void BM_WS(benchmark::State& state) {
 #include "crpc/mqtt/rpc_mqtt_transport.h"
 
 template <int funcNum>
-static void BM_MQTT(benchmark::State& state) {
+static void BM_MQTT(auto& state) {
   const int server_concurrency = state.range(0);
   const int client_concurrency = state.range(1);
 
@@ -159,7 +192,6 @@ static void BM_MQTT(benchmark::State& state) {
   // build clients
   std::vector<std::unique_ptr<rpc_mqtt_client<benchmark_interface>>> clients;
   for(int i=0; i<client_concurrency; ++i) {
-    boost::asio::io_context ioc;
     clients.push_back(std::make_unique<rpc_mqtt_client<benchmark_interface>>(std::string("127.0.0.1"), static_cast<std::uint16_t>(2000)));
   }
 
@@ -169,12 +201,31 @@ static void BM_MQTT(benchmark::State& state) {
 }
 
 
+static void CustomArguments(benchmark::internal::Benchmark* b) {
+  b->UseRealTime()->ArgsProduct({benchmark::CreateRange(1, 64, 2), benchmark::CreateRange(1, 64, 2)});
+}
 
-BENCHMARK(BM_MQTT<1>)
-    ->ArgPair(1,1)->ArgPair(2,1)/*->ArgPair(4,1)->ArgPair(8,1)
-->ArgPair(1,2)->ArgPair(1,4)->ArgPair(1, 8)
-->ArgPair(2,2)->ArgPair(4,4)->ArgPair(8,8)
-*/->UseRealTime();
+
+BENCHMARK(BM_HTTP<0>)->Apply(CustomArguments);
+BENCHMARK(BM_HTTP<1>)->Apply(CustomArguments);
+BENCHMARK(BM_HTTP<2>)->Apply(CustomArguments);
+BENCHMARK(BM_HTTP<3>)->Apply(CustomArguments);
+
+BENCHMARK(BM_WS<0>)->Apply(CustomArguments);
+BENCHMARK(BM_WS<1>)->Apply(CustomArguments);
+BENCHMARK(BM_WS<2>)->Apply(CustomArguments);
+BENCHMARK(BM_WS<3>)->Apply(CustomArguments);
+
+BENCHMARK(BM_MQTT<0>)->Apply(CustomArguments);
+BENCHMARK(BM_MQTT<1>)->Apply(CustomArguments);
+BENCHMARK(BM_MQTT<2>)->Apply(CustomArguments);
+BENCHMARK(BM_MQTT<3>)->Apply(CustomArguments);
+
+
+BENCHMARK(BM_NoNetwork<0>)->Apply(CustomArguments);
+BENCHMARK(BM_NoNetwork<1>)->Apply(CustomArguments);
+BENCHMARK(BM_NoNetwork<2>)->Apply(CustomArguments);
+BENCHMARK(BM_NoNetwork<3>)->Apply(CustomArguments);
 
 
 BENCHMARK_MAIN();

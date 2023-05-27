@@ -30,6 +30,7 @@ set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "disable tests" FORCE)
 include(cmake/pkg.cmake)
 include_directories(deps/net)
 include_directories(deps/benchmark/include)
+include_directories(deps/mqtt_cpp/include)
 
 
 ################################

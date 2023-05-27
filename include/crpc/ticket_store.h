@@ -25,9 +25,9 @@ public:
 
     std::future<std::vector<unsigned char>> emplace(uint64_t ticket_number)
     {
-      std::lock_guard<std::mutex> lock(mutex_);
       std::promise<std::vector<unsigned char>> promise;
       auto future = promise.get_future();
+      std::lock_guard<std::mutex> lock(mutex_);
       while(!tickets_.emplace(ticket_number, std::move(promise)).second) {
         std::cerr << "full at size " << tickets_.size() << "\n";
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
