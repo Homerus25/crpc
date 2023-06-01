@@ -10,6 +10,8 @@
 #include "message.h"
 #include "rpc_fn.h"
 
+#include "log.h"
+
 template<typename Interface>
 class rpc_server {
 public:
@@ -20,8 +22,7 @@ public:
 
     template <typename BufferType>
     const std::optional<std::vector<u_int8_t>> process_message(BufferType buffer) {
-      auto const req = cista::deserialize<message>(buffer);
-
+      message* req = deserializeMessage(buffer);
       auto const func_num = req->fn_idx;
       if (func_num < this->fn_.size()) {
         auto const pload = this->call(
@@ -37,7 +38,16 @@ public:
       return {};
     }
 
-      template <typename Fn, typename ReturnType, typename... Args>
+    template <typename BufferType>
+    message* deserializeMessage(BufferType& buffer) const {
+      try {
+        return cista::deserialize<message>(buffer);
+      }catch (cista::cista_exception& ex) {
+        LogErr("error deserialze message on server: ", ex.what());
+      }
+    }
+
+    template <typename Fn, typename ReturnType, typename... Args>
       void reg(fn<ReturnType, Args...> Interface::*const member_ptr, Fn&& f) {
         fn_[index_of_member(member_ptr)] =
                 [mf = std::forward<Fn>(f)](std::vector<unsigned char> const& in)

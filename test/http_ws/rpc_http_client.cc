@@ -1,4 +1,3 @@
-
 #define CRPC_LOG
 
 #include "crpc/http/rpc_http_client.h"
@@ -7,8 +6,6 @@
 int main(int argc, char* argv[]) {
   rpc_http_client<benchmark_interface> client{std::string("http://127.0.0.1:9000/"), 9000u};
 
-  std::this_thread::sleep_for(std::chrono::seconds(2));
-
   std::string testStr("Hello Big Data Echo");
 
   auto resHello = client.call(&benchmark_interface::say_hello, data::string("peter"));
@@ -16,7 +13,9 @@ int main(int argc, char* argv[]) {
   auto resEcho = client.call(&benchmark_interface::send_rcv_large_data, data::vector<unsigned char>(testStr.begin(), testStr.end()));
 
   auto unpackedHello = resHello();
+  std::cout << unpackedHello << std::endl;
   auto unpackedAvg = resAvg();
+  std::cout << unpackedAvg << std::endl;
 
   std::string hl(unpackedHello.begin(), unpackedHello.end());
 

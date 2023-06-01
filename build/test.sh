@@ -54,8 +54,14 @@ test-mqtt() {
 }
 
 build
+
+echo "test websocket"
 test-websocket
+
+echo "test http"
 test-http
+
+echo "test mqtt"
 test-mqtt
 
 exit 0

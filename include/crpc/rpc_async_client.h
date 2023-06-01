@@ -52,22 +52,43 @@ public:
     template < typename... Args>
     std::future<std::vector<unsigned char>> sendMS(unsigned fn_idx,
                                                  Args&&... args) {
-
         auto ticket_num = this->ts_.nextNumber();
         auto future = this->ts_.emplace(ticket_num);
-        auto tup = std::make_tuple(std::forward<Args>(args)...);
 
-        auto conTup = cista::serialize<cista::mode::UNCHECKED>(tup);
+        cista::byte_buf conTup = serializeArgs(std::forward<Args>(args)...);
         cista::offset::vector<unsigned char> conTup2 (conTup.begin(), conTup.end());
 
         message ms{
             ticket_num, fn_idx,
             conTup2
         };
-        std::vector<unsigned char> ms_buf;
-        ms_buf = cista::serialize<cista::mode::UNCHECKED>(ms);
+        std::vector<uint8_t> ms_buf = serializeMessage(ms);
+        message* tmp = cista::deserialize<message>(ms_buf);
+        if(tmp->ticket_ != ticket_num || tmp->fn_idx != fn_idx) {
+            std::cout << "cista failed at client send!!!" << std::endl;
+        }
+
         transport.send(ms_buf);
         return future;
+    }
+
+    std::vector<uint8_t> serializeMessage(message& ms) const {
+        try {
+            return cista::serialize(ms);
+        }catch (cista::cista_exception& ex) {
+          std::cout << "send failed to serialize message: " << ex.what()
+                    << std::endl;
+        }
+    }
+
+    template < typename... Args>
+    cista::byte_buf serializeArgs(Args&&... args) const {
+        auto tup = std::make_tuple(std::forward<Args>(args)...);
+        try {
+          return cista::serialize(tup);
+        }catch (cista::cista_exception& ex) {
+            std::cout << "send failed to serialize arguments: " << ex.what() << std::endl;
+        }
     }
 
     void stop() {

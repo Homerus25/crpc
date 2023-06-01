@@ -17,8 +17,6 @@ class http_ws_server : public rpc_server<Interface>  {
 public:
   http_ws_server(boost::asio::io_context& ioc_) {
     webs_ = std::unique_ptr<web_server>(new web_server{ioc_});
-    webs_->set_request_queue_limit(10000);
-    //webs_->set_request_body_limit(1024 * 1024 * 4);
 
     webs_->on_ws_msg([this](ws_session_ptr const& s, std::string const& msg,
                         ws_msg_type type) {
@@ -30,7 +28,7 @@ public:
           session->send(resMs, type,
                         [](boost::system::error_code ec, std::size_t) {
                           if (ec) {
-                            Log("send ec: ", ec.message());
+                            LogErr("send ec: ", ec.message());
                           }
                         });
         }
@@ -52,10 +50,12 @@ public:
       //Log("got ms: ", req.body());
       auto response = this->process_message(req.body());
       if (response.has_value()) {
-        std::string resMs(response.value().begin(), response.value().end());
-        return cb(string_response(req, resMs, boost::beast::http::status::ok, std::string_view()));
+        auto resVal = response.value();
+        std::string resMs(resVal.begin(), resVal.end());
+        return cb(string_response(req, resMs, boost::beast::http::status::ok, "binary"));
       }
-      return cb(empty_response(req, boost::beast::http::status::ok, std::string_view()));
+      LogErr("server wants to send empty response!");
+      return cb(empty_response(req, boost::beast::http::status::ok));
     });
 
     boost::system::error_code ec;
@@ -71,6 +71,7 @@ public:
   }
 
   void stop() {
+    Log("server canceled connection");
     webs_->stop();
   }
 

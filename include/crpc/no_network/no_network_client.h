@@ -15,7 +15,7 @@ struct no_network_transport {
     runner = std::thread([&](){ ioc_.run();});
   }
 
-  void send(std::vector<unsigned char> ms_buf) {
+  void send(std::vector<uint8_t> ms_buf) {
     this->recv_(ms_buf, [this](const std::vector<uint8_t> ms){ this->receive(ms); });
   }
 

@@ -14,16 +14,13 @@ TEST_CASE("no network test") {
     };
 
     int count = 0;
-    boost::asio::io_context server_ioc;
-    auto server = no_network_server<interface>(server_ioc);
+    auto server = no_network_server<interface>();
     std::stringstream out;
     server.reg(&interface::add_, [](int a, int b) { return a + b; });
     server.reg(&interface::hello_world_, [&]() { out << "hello world"; });
     server.reg(&interface::inc_count_, [&](int i) { return count += i; });
     server.reg(&interface::get_count_, [&]() { return count; });
-    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> x
-        = boost::asio::make_work_guard(server_ioc);
-    auto st = std::thread([&](){ server.run(1); });
+    server.run(1);
 
     no_network_client<interface> client{ [&](const std::vector<uint8_t> message, auto rcv) { server.receive(message, rcv); } };
 
@@ -34,5 +31,4 @@ TEST_CASE("no network test") {
     CHECK(client.call(&interface::get_count_)() == 5);
     client.stop();
     server.stop();
-    st.join();
 }

@@ -29,36 +29,6 @@ void run_conncurent(boost::asio::io_context& ioc, int thread_count) {
   }
 }
 
-template <int funcNum>
-static void BM_NoNetwork(benchmark::State& state) {
-  const int server_concurrency = state.range(0);
-  const int client_concurrency = state.range(1);
-
-  // start server
-  boost::asio::io_context server_ioc(server_concurrency);
-  auto server = no_network_server<benchmark_interface>(server_ioc);
-  register_benchmark_interface(server);
-  boost::asio::executor_work_guard<boost::asio::io_context::executor_type> x
-      = boost::asio::make_work_guard(server_ioc);
-  run_conncurent(server_ioc, server_concurrency);
-
-  // build clients
-  std::vector<std::unique_ptr<no_network_client<benchmark_interface>>> clients;
-  std::function<void(const std::vector<uint8_t>, std::function<void(const std::vector<uint8_t>)>)> const transportLambda = [&server](const std::vector<uint8_t>& message, auto rcv) { server.receive(message, rcv); };
-  for(int i=0; i<client_concurrency; ++i) {
-    clients.push_back(std::make_unique<no_network_client<benchmark_interface>>(transportLambda));
-  }
-
-  doBench<funcNum>(state, clients);
-
-  server.stop();
-}
-
-
-
-
-#include "crpc/http/http_ws_server.h"
-#include "crpc/http/rpc_http_client.h"
 
 template <int funcNum>
 void doBench(auto& state, auto& clients) {
