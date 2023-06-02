@@ -6,16 +6,13 @@
 #include "../ticket_store.h"
 
 #include "../../ws_client.h"
-#include "boost/asio/post.hpp"
 
-#include <cista/containers/vector.h>
 #include <memory>
 
 struct ws_transport {
   explicit ws_transport(Receiver rec, std::string const& url, unsigned int const port)
-      : receiver(rec)
+      : receiver(rec), work_guard_(boost::asio::make_work_guard(ioc_))
   {
-    std::promise<void> pr;
     client = std::make_unique<net::ws_client>(ioc_, url, std::to_string(port));
     client->run([&](boost::system::error_code ec) {
       if (ec) {
@@ -23,10 +20,11 @@ struct ws_transport {
         return;
       }
       Log("connected");
-      pr.set_value();
+      isConnected = true;
+      cv.notify_all();
     });
     client->on_fail([&](boost::system::error_code ec) {
-      LogErr("fail ", ec.to_string());
+      LogErr("client fail: ", ec.to_string());
     });
 
     client->on_msg([&](std::string const& msg, bool /* binary */) {
@@ -34,40 +32,33 @@ struct ws_transport {
       receiver.processAnswer(dd);
     });
 
-    auto fut = pr.get_future();
+    runner = std::thread([&](){ ioc_.run(); });
 
-    while (true) {
-      std::future_status status = fut.wait_for(std::chrono::seconds(1));
-      if (status == std::future_status::ready) break;
-      ioc_.poll();
-    }
-    Log("is connected");
-
-    std::thread([&](){
-      boost::asio::executor_work_guard<boost::asio::io_context::executor_type> x
-          = boost::asio::make_work_guard(ioc_);
-      ioc_.run();
-    }).detach();
+    std::unique_lock lk(mutex);
+    cv.wait(lk, [&] { return isConnected; });
   }
 
   void send(std::vector<unsigned char> ms_buf) {
     auto const ms_string = std::string(begin(ms_buf), end(ms_buf));
-    boost::asio::post(ioc_,
-                      [=, this]() {
-                        client->send(ms_string, true);
-                      }
-    );
+    client->send(ms_string, true);
   }
 
   void stop() {
-    ioc_.stop();
+    client->stop();
+    work_guard_.reset();
+    runner.join();
   }
 
 private:
   Receiver receiver;
   boost::asio::io_context ioc_;
-  std::unique_ptr<net::ws_client> client;
   ticket_store ts_;
+  std::thread runner;
+  boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_guard_;
+  std::unique_ptr<net::ws_client> client;
+  std::condition_variable cv;
+  std::mutex mutex;
+  bool isConnected = false;
 };
 
 template<typename Interface>

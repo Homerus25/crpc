@@ -18,7 +18,6 @@
 
 namespace asio = boost::asio;
 namespace websocket = boost::beast::websocket;
-//namespace ssl = asio::ssl;
 using tcp = asio::ip::tcp;
 using boost::system::error_code;
 
@@ -29,12 +28,12 @@ struct ws_client::impl : public boost::asio::coroutine,
   impl(asio::io_service& ios, std::string host,
        std::string port)
       : resolve_{ios},
-        //ws_{asio::make_strand(ios)},
         ws_{ios},
         host_{std::move(host)},
         port_{std::move(port)} {}
 
   void run(std::function<void(error_code)> const& cb) {
+    stopped = false;
     loop(shared_from_this(), error_code{}, cb);
   }
 
@@ -52,34 +51,10 @@ struct ws_client::impl : public boost::asio::coroutine,
           });
       return_on_error("resolve");
 
-      // Connect to endpoint.
-      /*
-      yield asio::async_connect(
-              ws_.next_layer(), results.begin(), results.end(),
-              std::bind(&impl::on_connect, this, me, std::placeholders::_1, cb));
-      return_on_error("connect");
-      */
-
       yield asio::async_connect(
           ws_.next_layer(), results.begin(), results.end(),
           std::bind(&impl::on_connect, this, me, std::placeholders::_1, cb));
       return_on_error("connect");
-
-      /*
-      beast::get_lowest_layer(ws_).async_connect(
-              results,
-              beast::bind_front_handler(
-                      &session::on_connect,
-                      shared_from_this()));
-      */
-
-      /*
-      // SSL handshake.
-      yield ws_.next_layer().async_handshake(
-              ssl::stream_base::client,
-              [me, cb](error_code ec) { me->loop(me, ec, cb); });
-      return_on_error("ssl handshake");
-       */
 
       // Websocket handshake.
       yield ws_.async_handshake(
@@ -95,12 +70,14 @@ struct ws_client::impl : public boost::asio::coroutine,
       while (true) {
         yield ws_.async_read(
             buffer_, [me](error_code ec, std::size_t) { me->loop(me, ec); });
+
         if (ec) {
-          if (on_fail_fn_) {
+          if (!stopped && on_fail_fn_) {
             on_fail_fn_(ec);
           }
           return;
         }
+
         if (on_msg_fn_) {
           on_msg_fn_(boost::beast::buffers_to_string(buffer_.data()),
                      ws_.got_binary());
@@ -152,7 +129,12 @@ struct ws_client::impl : public boost::asio::coroutine,
 
   void stop() {
     ws_.async_close(websocket::close_code::normal,
-                    [me = shared_from_this()](error_code ec) {});
+      [me = shared_from_this()](error_code ec) {
+        me->stopped = true;
+        if(ec) {
+          std::cout << "error on close: " << ec.what() << std::endl;
+        }
+      });
   }
 
   std::string host_, port_;
@@ -163,6 +145,7 @@ struct ws_client::impl : public boost::asio::coroutine,
   boost::beast::multi_buffer buffer_;
   std::queue<std::pair<std::string, bool>> queue_;
   bool send_active_{false};
+  bool stopped{true};
 };
 
 ws_client::ws_client(asio::io_service& ios,

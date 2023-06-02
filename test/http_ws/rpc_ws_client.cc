@@ -25,5 +25,7 @@ int main(int argc, char* argv[]) {
   if (testStr != echoback)
     return 1;
 
+  client.stop();
+
   return 0;
 }
