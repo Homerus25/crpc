@@ -45,7 +45,7 @@ endif()
 ################################
 # cprc Library
 ################################
-file(GLOB_RECURSE crpc-src-files src/*.cc)
+set(crpc-src-files src/client.cc src/ws_client.cc src/server.cc)
 set (THREADS_PREFER_PTHREAD_FLAG ON)
 add_library(crpc ${crpc-src-files})
 target_link_libraries(crpc cista ctx ${CMAKE_THREAD_LIBS_INIT})

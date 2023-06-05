@@ -27,6 +27,7 @@ public:
 
   void run(int threads_count);
   void stop() {
+    running = false;
     server.close();
     for(auto& t: runner)
       t.join();
@@ -54,6 +55,7 @@ private:
   boost::asio::io_context ioc;
   MQTT_NS::server<> server;
   std::vector<std::thread> runner;
+  bool running{false};
 };
 
 #include "mqtt_server_handler.h"
@@ -61,6 +63,7 @@ private:
 template<typename Interface>
 void rpc_mqtt_server<Interface>::run(int threads_count)
 {
+  running = true;
   for(int i=0; i<threads_count; ++i)
     runner.emplace_back([&](){ ioc.run(); });
 }
@@ -70,8 +73,9 @@ void rpc_mqtt_server<Interface>::set_handler(
     mqtt::server<mqtt::strand, std::mutex, std::lock_guard, 2>& server) {
 
   server.set_error_handler(
-      [](MQTT_NS::error_code error_code) {
-        std::cout << "error: " << error_code.message() << std::endl;
+      [&](MQTT_NS::error_code error_code) {
+        if (running)
+          LogErr("error: ", error_code.message());
       }
   );
 

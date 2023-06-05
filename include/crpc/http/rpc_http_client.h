@@ -31,6 +31,11 @@ struct http_transport {
         isConnected = true;
       }
     });
+
+    while (!isConnected) {
+      Log("send too early");
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
   }
 
   void send(std::vector<unsigned char> ms_buf) {
@@ -42,19 +47,14 @@ struct http_transport {
       ms_string}
     );
 
-      while (!isConnected) {
-        Log("send too early");
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      }
-
-      {
-        std::unique_lock lk(mutex);
-        cv.wait(lk, [&] { return !queryInProgress; });
-        queryInProgress = true;
-      }
-      ios_.post([=](){
-        http_client->query(*s_req, getLambda(ms_string));
-        });
+    {
+      std::unique_lock lk(mutex);
+      cv.wait(lk, [&] { return !queryInProgress; });
+      queryInProgress = true;
+    }
+    ios_.post([=](){
+      http_client->query(*s_req, getLambda(ms_string));
+      });
   }
 
   net::http::client::basic_http_client<net::tcp>::callback getLambda(std::string ms_string) {

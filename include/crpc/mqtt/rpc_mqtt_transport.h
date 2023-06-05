@@ -23,6 +23,10 @@ struct rpc_mqtt_transport {
 
       mqtt_client_->connect();
       runner = std::thread([&](){ ioc_.run(); });
+
+      while(!mqtt_client_->connected()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      }
   }
 
   void send(std::vector<unsigned char> ms_buf) {
@@ -36,7 +40,6 @@ struct rpc_mqtt_transport {
   void stop() {
     close_connection();
     runner.join();
-    ioc_.stop();
   }
 
 private:
@@ -57,7 +60,7 @@ private:
     });
     mqtt_client_->set_error_handler(
         [](MQTT_NS::error_code const& ec) {
-          LogErr("error occured: " , ec);
+          LogErr("[client] error occured: " , ec);
         });
     mqtt_client_->set_v5_puback_handler(get_puback_handler());
     mqtt_client_->set_v5_pubrec_handler(get_pubrec_handler());
