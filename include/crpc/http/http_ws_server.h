@@ -15,7 +15,7 @@ using net::web_server;
 template <typename Interface>
 class http_ws_server : public rpc_server<Interface>  {
 public:
-  http_ws_server(boost::asio::io_context& ioc_) {
+  http_ws_server() {
     webs_ = std::unique_ptr<web_server>(new web_server{ioc_});
 
     webs_->on_ws_msg([this](ws_session_ptr const& s, std::string const& msg,
@@ -70,11 +70,24 @@ public:
     webs_->run();
   }
 
+  void run(int threads_count) {
+    for(int i=0; i<threads_count; ++i)
+      runner.emplace_back([&](){ ioc_.run(); });
+  }
+
   void stop() {
     Log("server canceled connection");
     webs_->stop();
+    for(auto& t: runner)
+      t.join();
+  }
+
+  void block() {
+    ioc_.run();
   }
 
 private:
+  boost::asio::io_context ioc_;
   std::unique_ptr<web_server> webs_;
+  std::vector<std::thread> runner;
 };

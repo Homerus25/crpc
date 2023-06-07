@@ -14,7 +14,7 @@
 #include <condition_variable>
 
 struct http_transport {
-  explicit http_transport(Receiver rec, std::string url, unsigned int const port)
+  explicit http_transport(Receiver rec, std::string url = "http://127.0.0.1:9000/", unsigned int const port = 9000u)
     : receiver(rec), url_(std::move(url)), work_guard_(boost::asio::make_work_guard(ios_))
   {
     runner_ = std::thread([&](){ ios_.run(); });

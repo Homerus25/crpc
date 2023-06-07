@@ -17,7 +17,7 @@
 template <typename Interface>
 class rpc_mqtt_server : public rpc_server<Interface> {
 public:
-  explicit rpc_mqtt_server(std::uint16_t port)
+  explicit rpc_mqtt_server(std::uint16_t port = 2000)
       : port_(port),
         server(MQTT_NS::server<>(boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(),port_),ioc))
   {

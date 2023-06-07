@@ -10,7 +10,7 @@
 #include <memory>
 
 struct ws_transport {
-  explicit ws_transport(Receiver rec, std::string const& url, unsigned int const port)
+  explicit ws_transport(Receiver rec, std::string const& url = "127.0.0.1", unsigned int const port = 9000u)
       : receiver(rec), work_guard_(boost::asio::make_work_guard(ioc_))
   {
     client = std::make_unique<net::ws_client>(ioc_, url, std::to_string(port));
