@@ -11,11 +11,11 @@
 #include "net/tcp.h"
 
 #include <memory>
-#include <condition_variable>
+#include <queue>
 
 struct http_transport {
   explicit http_transport(Receiver rec, std::string url = "http://127.0.0.1:9000/", unsigned int const port = 9000u)
-    : receiver(rec), url_(std::move(url)), work_guard_(boost::asio::make_work_guard(ios_))
+      : receiver(rec), url_(std::move(url)), work_guard_(boost::asio::make_work_guard(ios_))
   {
     runner_ = std::thread([&](){ ios_.run(); });
     http_client = net::http::client::make_http(ios_, url_);
@@ -33,41 +33,49 @@ struct http_transport {
     });
 
     while (!isConnected) {
-      Log("send too early");
+      Log("wait for connection");
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
   }
 
   void send(std::vector<unsigned char> ms_buf) {
-    auto const ms_string = std::string(begin(ms_buf), end(ms_buf));
+    std::string ms_string(begin(ms_buf), end(ms_buf));
+
     auto s_req = std::make_shared<net::http::client::request>(
         net::http::client::request{
             url_, net::http::client::request::method::GET,
-      {{"Connection", "Keep-Alive"}},
-      ms_string}
+            {{"Connection", "Keep-Alive"}},
+            ms_string}
     );
 
-    {
-      std::unique_lock lk(mutex);
-      cv.wait(lk, [&] { return !queryInProgress; });
-      queryInProgress = true;
-    }
-    ios_.post([=](){
-      http_client->query(*s_req, getLambda(ms_string));
-      });
+    ios_.post([this, s_req]() {
+      queue_.emplace(s_req);
+      send_next();
+    });
   }
 
-  net::http::client::basic_http_client<net::tcp>::callback getLambda(std::string ms_string) {
+  void send_next() {
+    if (!queryInProgress && !queue_.empty()) {
+      auto req = queue_.front();
+      queue_.pop();
+      queryInProgress = true;
+      http_client->query(*req, getLambda());
+    }
+  }
+
+  net::http::client::basic_http_client<net::tcp>::callback getLambda() {
     return [&, this](std::shared_ptr<net::tcp> client,
-                  const net::http::client::response& res,
-                  boost::system::error_code ec) {
+                     const net::http::client::response& res,
+                     boost::system::error_code ec) {
       if (ec) {
         LogErr("error: ", ec.message());
       } else {
         std::vector<u_int8_t> dd(res.body.begin(), res.body.end());
         this->receiver.processAnswer(dd);
         queryInProgress = false;
-        cv.notify_one();
+        ios_.post([this](){
+          send_next();
+        });
       }
     };
   }
@@ -90,9 +98,8 @@ private:
   boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_guard_;
   std::shared_ptr<net::http::client::http> http_client;
   std::atomic<bool> isConnected = false;
-  std::condition_variable cv;
-  std::mutex mutex;
   bool queryInProgress = false;
+  std::queue<std::shared_ptr<net::http::client::request>> queue_;
 };
 
 template<typename Interface>
