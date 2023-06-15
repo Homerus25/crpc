@@ -8,6 +8,7 @@
 #include "net/web_server/web_server.h"
 
 #include <memory>
+#include <thread>
 
 using namespace net;
 using net::web_server;
@@ -17,6 +18,7 @@ class http_ws_server : public rpc_server<Interface>  {
 public:
   http_ws_server() {
     webs_ = std::unique_ptr<web_server>(new web_server{ioc_});
+    webs_->set_request_body_limit(1024 * 32 + 1024);
 
     webs_->on_ws_msg([this](ws_session_ptr const& s, std::string const& msg,
                         ws_msg_type type) {
