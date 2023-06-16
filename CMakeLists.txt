@@ -15,15 +15,11 @@ if (MSVC)
 endif()
 
 find_package(Boost REQUIRED COMPONENTS system thread coroutine log filesystem REQUIRED)
-#add_link_options(crpc-client-mqtt "-lboost_log -lboost_filesystem -lboost_thread")
-
-#find_package(Boost REQUIRED COMPONENTS system thread coroutine REQUIRED)
 find_package(Threads)
 
 
 link_directories(${Boost_LIBRARY_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIR} deps/net/include)
-#add_definitions(-DBOOST_ASIO_DISABLE_CONCEPTS=1)  # fixes issue with Boost 1.72.0
 
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "disable tests" FORCE)
 
@@ -57,26 +53,16 @@ link_libraries(Boost::coroutine)
 ################################
 # Tests
 ################################
-file(GLOB_RECURSE crpc-src-test-files test/*.cc)
-add_executable(crpc-test ${crpc-src-test-files})
-target_link_libraries(crpc-test doctest crpc)
+find_package(doctest REQUIRED)
+include_directories(${DOCTEST_INCLUDE_DIR})
+add_executable(crpc-test test/main.cc test/no_network_test.cc)
+target_include_directories(crpc-test PUBLIC ${DOCTEST_INCLUDE_DIR})
+target_link_libraries(crpc-test doctest::doctest doctest crpc web-server http-client)
 
 
 ################################
-# Example
+# executables
 ################################
-#add_definitions(__clang__)
-
-# simple example / no benchmark
-add_executable(crpc-example-server example/server.cc)
-target_link_libraries(crpc-example-server crpc)
-
-add_executable(crpc-example-client example/client.cc)
-target_link_libraries(crpc-example-client crpc)
-
-add_executable(crpc-no-network-test example/no_network/no_network_test.cpp)
-target_link_libraries(crpc-no-network-test crpc)
-
 
 # http and websocket
 add_executable(crpc-http-ws-server test/http_ws/http_ws_server.cc)
@@ -89,52 +75,14 @@ add_executable(crpc-ws-client test/http_ws/rpc_ws_client.cc src/ws_client.cc)
 target_link_libraries(crpc-ws-client crpc)
 
 
-
-
-
-add_executable(crpc-example-client-async example/async_client.cc)
-target_link_libraries(crpc-example-client-async crpc)
-
-#add_executable(crpc-example-client-async-thread-websocket example/websocket_async_thread_client.cc)
-#target_link_libraries(crpc-example-client-async-thread-websocket crpc)
-
-#add_executable(crpc-example-server-async-thread-websocket example/websocket_async_thread_server.cc)
-#target_link_libraries(crpc-example-server-async-thread-websocket crpc)
-
-add_executable(crpc-example-server-async-websocket-net example/websocket_async_net_server.cc)
-target_link_libraries(crpc-example-server-async-websocket-net crpc web-server)
-#target_compile_features(crpc-example-server-async-websocket INTERFACE cxx_std_17)
-
-add_executable(crpc-example-client-async-websocket-net example/websocket_async_net_client.cc src/ws_client.cc)
-target_link_libraries(crpc-example-client-async-websocket-net crpc)
-
-
-add_executable(crpc-client-benchmark example/client_benchmarks.cc src/ws_client.cc)
-target_link_libraries(crpc-client-benchmark crpc)
-
-add_executable(crpc-no-network-benchmark example/no_network/no_network.cc)
+# no network
+add_executable(crpc-no-network-benchmark test/no_network/no_network.cc)
 target_link_libraries(crpc-no-network-benchmark crpc)
-
-find_package(Threads REQUIRED)
-set(mqtt_cpp_iface_DIR mqtt_cpp)
-
-# benchmark
-add_executable(crpc-benchmark src/benchmark/benchmark.cc include/crpc/mqtt/rpc_mqtt_transport.h)
-target_include_directories(crpc-benchmark PUBLIC deps/benchmark/include deps/mqtt_cpp/include)
-target_link_libraries(crpc-benchmark crpc benchmark web-server http-client)
 
 
 # mqtt
-#######
-
-#add_subdirectory(include/crpc/mqtt_cpp)
-
-#add_compile_definitions(crpc-client-mqtt "-DMQTT_USE_LOG -DBOOST_LOG_DYN_LINK -lboost_log -lboost_filesystem -lboost_thread")
-#add_compile_definitions(crpc-client-mqtt "-lboost_log -lboost_filesystem -lboost_thread")
-#add_link_options(crpc-client-mqtt "-lboost_log -lboost_filesystem -lboost_thread")
-
-
-
+find_package(Threads REQUIRED)
+set(mqtt_cpp_iface_DIR mqtt_cpp)
 
 add_executable(crpc-mqtt-client test/mqtt/mqtt-client.cc include/crpc/mqtt/rpc_mqtt_transport.h)
 target_include_directories(crpc-mqtt-client PUBLIC deps/mqtt_cpp/include Boost)
@@ -144,20 +92,10 @@ add_executable(crpc-mqtt-server test/mqtt/mqtt-server.cc include/crpc/mqtt/rpc_m
 target_include_directories(crpc-mqtt-server PUBLIC deps/mqtt_cpp/include Boost)
 target_link_libraries(crpc-mqtt-server crpc Boost::log)
 
-###############################
-if(FALSE)
-add_subdirectory(coroutines)
 
-link_directories(${Boost_LIBRARY_DIRS})
-include_directories(SYSTEM ${Boost_INCLUDE_DIR})
-add_definitions(-DBOOST_ASIO_DISABLE_CONCEPTS=1 -BOOST_ASIO_NO_DEPRECATED=1)  # fixes issue with Boost 1.72.0
-
-set(CMAKE_CXX_STANDARD 20)
-
-add_compile_options(-fcoroutines)
-
-add_executable(aiso-coroutines-server coroutines/main.cpp coroutines/app.cpp coroutines/connection.cpp coroutines/server.cpp)
-target_link_libraries(aiso-coroutines-server PUBLIC Boost::system crpc beast_fun_times::util -fcoroutines)
-
-target_link_options(aiso-coroutines-server PUBLIC -fcoroutines)
-ENDIF()
+################################
+# benchmark
+################################
+add_executable(crpc-benchmark src/benchmark/benchmark.cc include/crpc/mqtt/rpc_mqtt_transport.h)
+target_include_directories(crpc-benchmark PUBLIC deps/benchmark/include deps/mqtt_cpp/include)
+target_link_libraries(crpc-benchmark crpc benchmark web-server http-client)
