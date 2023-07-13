@@ -230,16 +230,16 @@ static void BM_MQTT(auto& state) {
 
 template <int funcNum>
 static void BM_Latency_NoNetwork(benchmark::State& state) {
-  LatencyBench<http_ws_server, rpc_http_client, benchmark_interface> bench(state.range(0), state.range(1));
+  LatencyBench<no_network_server, no_network_client, benchmark_interface> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
   bench.writeLatencies("latencies_NoNetwork_<" + std::to_string(funcNum) + ">.txt");
 }
 
 template <int funcNum>
-static void BM_Latency_HTPP(benchmark::State& state) {
-  LatencyBench<no_network_server, no_network_client, benchmark_interface> bench(state.range(0), state.range(1));
+static void BM_Latency_HTTP(benchmark::State& state) {
+  LatencyBench<http_ws_server, rpc_http_client, benchmark_interface> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
-  bench.writeLatencies("latencies_HTPP_<" + std::to_string(funcNum) + ">.txt");
+  bench.writeLatencies("latencies_HTTP_<" + std::to_string(funcNum) + ">.txt");
 }
 
 template <int funcNum>
@@ -294,10 +294,10 @@ BENCHMARK(BM_Latency_NoNetwork<1>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_NoNetwork<2>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_NoNetwork<3>)->Apply(LatencyBenchArguments);
 
-BENCHMARK(BM_Latency_HTPP<0>)->Apply(LatencyBenchArguments);
-BENCHMARK(BM_Latency_HTPP<1>)->Apply(LatencyBenchArguments);
-BENCHMARK(BM_Latency_HTPP<2>)->Apply(LatencyBenchArguments);
-BENCHMARK(BM_Latency_HTPP<3>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_HTTP<0>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_HTTP<1>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_HTTP<2>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_HTTP<3>)->Apply(LatencyBenchArguments);
 
 BENCHMARK(BM_Latency_WS<0>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_WS<1>)->Apply(LatencyBenchArguments);

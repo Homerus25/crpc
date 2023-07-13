@@ -11,9 +11,9 @@
   branch=master
   commit=70e8f76437b76dd5e9c0a2eb9b907df190ab71a0
 [net]
-  url=git@github.com:motis-project/net.git
-  branch=master
-  commit=4fdd79d50481fdf642cb77bc92cdd4c68ddce040
+  url=git@github.com:Homerus25/net.git
+  branch=crpc-improvements
+  commit=e3b8d0b58f8598cf0c858d7794cc6c21dda712b0
 [mqtt_cpp]
   url=git@github.com:redboltz/mqtt_cpp.git
   branch=master

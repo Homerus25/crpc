@@ -44,7 +44,7 @@ struct http_transport {
     auto s_req = std::make_shared<net::http::client::request>(
         net::http::client::request{
             url_, net::http::client::request::method::GET,
-            {{"Connection", "Keep-Alive"}},
+            {},
             ms_string}
     );
 
