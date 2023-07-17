@@ -166,7 +166,9 @@ void Bench<Server, Client, Interface, isFloodBench>::buildClients(const int clie
 
 template<>
 void Bench<no_network_server, no_network_client, benchmark_interface, true>::buildClients(const int client_concurrency) {
-  std::function<void(const std::vector<uint8_t>, std::function<void(const std::vector<uint8_t>)>)> const transportLambda = [this](const std::vector<uint8_t>& message, auto rcv) { server->receive(std::move(message), rcv); };
+  std::function<void(std::unique_ptr<std::vector<uint8_t>>, std::function<void(std::unique_ptr<std::vector<uint8_t>>)>)> const transportLambda = [this](std::unique_ptr<std::vector<uint8_t>> message, auto rcv) {
+    server->receive(std::move(message), rcv);
+  };
   for(int i=0; i<client_concurrency; ++i) {
     clients.push_back(std::make_unique<no_network_client<benchmark_interface>>(transportLambda));
   }
@@ -174,7 +176,9 @@ void Bench<no_network_server, no_network_client, benchmark_interface, true>::bui
 
 template<>
 void Bench<no_network_server, no_network_client, benchmark_interface, false>::buildClients(const int client_concurrency) {
-  std::function<void(const std::vector<uint8_t>, std::function<void(const std::vector<uint8_t>)>)> const transportLambda = [this](const std::vector<uint8_t>& message, auto rcv) { server->receive(std::move(message), rcv); };
+  std::function<void(std::unique_ptr<std::vector<uint8_t>>, std::function<void(std::unique_ptr<std::vector<uint8_t>>)>)> const transportLambda = [this](std::unique_ptr<std::vector<uint8_t>> message, auto rcv) {
+    server->receive(std::move(message), rcv);
+  };
   for(int i=0; i<client_concurrency; ++i) {
     clients.push_back(std::make_unique<no_network_client<benchmark_interface>>(transportLambda));
   }

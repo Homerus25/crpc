@@ -22,7 +22,7 @@ TEST_CASE("no network test") {
     server.reg(&interface::get_count_, [&]() { return count; });
     server.run(1);
 
-    no_network_client<interface> client{ [&](const std::vector<uint8_t> message, auto rcv) { server.receive(message, rcv); } };
+    no_network_client<interface> client{ [&](std::unique_ptr<std::vector<uint8_t>> message, auto rcv) { server.receive(std::move(message), rcv); } };
 
     CHECK(client.call(&interface::add_, 1, 2)() == 3);
     CHECK_NOTHROW(client.call(&interface::hello_world_)());

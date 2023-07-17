@@ -2,7 +2,6 @@
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/post.hpp>
-#include <queue>
 #include "crpc/rpc_server.h"
 
 #include <thread>
@@ -13,13 +12,13 @@ struct no_network_server : public rpc_server<Interface> {
     : work_guard_(boost::asio::make_work_guard(ioc_))
   {}
 
-  void receive(const std::vector<uint8_t> message, std::function<void(const std::vector<uint8_t>)> client) {
-    ioc_.post(
-        [cl = client, ms = std::move(message), this](){
-      auto const response = this->process_message(std::move(ms));
-      if(response)
-        cl(std::move(response.value()));
-    });
+  void receive(std::unique_ptr<std::vector<uint8_t>> message, std::function<void(std::unique_ptr<std::vector<uint8_t>>)> client) {
+    boost::asio::post(ioc_,
+        [this, ms(std::move(message.release())), cl = std::move(client)]() {
+          auto const response = this->process_message(std::move(*ms));
+          delete ms;
+          cl(std::move(std::make_unique<std::vector<uint8_t>>(std::move(response.value()))));
+        });
   }
 
   void run(int threads_count) {

@@ -11,7 +11,7 @@
 #include "../receiver.h"
 
 struct rpc_mqtt_transport {
-    explicit rpc_mqtt_transport(Receiver rec, std::string const& name, std::uint16_t port)
+    explicit rpc_mqtt_transport(Receiver rec, std::string const& name = "127.0.0.1", std::uint16_t port = 2000)
       : receiver(rec)
     {
       mqtt_client_ = mqtt::make_client(ioc_, name, port, mqtt::protocol_version::v5);
@@ -21,7 +21,11 @@ struct rpc_mqtt_transport {
 
       set_handler();
 
-      mqtt_client_->connect();
+      boost::system::error_code ec;
+      mqtt_client_->connect(ec);
+      if(ec)
+        std::cout << "error connecting: " << ec.what() << std::endl;
+
       runner = std::thread([&](){ ioc_.run(); });
 
       while(!mqtt_client_->connected()) {
