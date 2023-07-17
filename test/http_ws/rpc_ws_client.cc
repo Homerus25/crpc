@@ -2,9 +2,10 @@
 
 #include "crpc/http/rpc_ws_client.h"
 #include "../../src/benchmark/benchmark_interface.h"
+#include "crpc/serialization/cista.h"
 
 int main(int argc, char* argv[]) {
-  rpc_ws_client<benchmark_interface> client{std::string("127.0.0.1"), 9000u};
+  rpc_ws_client<benchmark_interface, CistaSerialzer> client{std::string("127.0.0.1"), 9000u};
 
   std::string testStr("Hello Big Data Echo");
 

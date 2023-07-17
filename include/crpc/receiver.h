@@ -3,24 +3,24 @@
 #include "ticket_store.h"
 #include "message.h"
 
+template<class Serializer>
 class Receiver {
+private:
+  typedef message<typename Serializer::SerializedContainer> message_t;
+
 public:
-  Receiver(ticket_store& ts) : ts_(ts)
+  Receiver(ticket_store<typename Serializer::SerializedContainer>& ts) : ts_(ts)
   {}
 
-  void processAnswer(std::vector<u_int8_t > answer) {
-    const message* ms = deserialzeMessage(answer);
+  void processAnswer(Serializer::SerializedContainer answer) {
+    const message_t* ms = deserialzeMessage(answer);
     this->ts_.setValue(ms->ticket_, ms->payload_);
   }
 
 private:
-  const message* const deserialzeMessage(const std::vector<u_int8_t>& answer) const {
-    try {
-      return cista::deserialize<message>(answer);
-    }catch (cista::cista_exception& ex) {
-      std::cout << "error deserializing message in receiver: " << ex.what() << std::endl;
-    }
+  const message_t* const deserialzeMessage(/*const*/ Serializer::SerializedContainer& answer) const {
+    return Serializer::template deserialize<message_t>(answer);
   }
 
-  ticket_store& ts_;
+  ticket_store<typename Serializer::SerializedContainer>& ts_;
 };

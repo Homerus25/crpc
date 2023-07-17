@@ -9,8 +9,9 @@
 
 #include <memory>
 
+template<typename Serializer>
 struct ws_transport {
-  explicit ws_transport(Receiver rec, std::string const& url = "127.0.0.1", unsigned int const port = 9000u)
+  explicit ws_transport(Receiver<Serializer> rec, std::string const& url = "127.0.0.1", unsigned int const port = 9000u)
       : receiver(rec), work_guard_(boost::asio::make_work_guard(ioc_))
   {
     client = std::make_unique<net::ws_client>(ioc_, url, std::to_string(port));
@@ -28,7 +29,7 @@ struct ws_transport {
     });
 
     client->on_msg([&](std::string const& msg, bool /* binary */) {
-      std::vector<unsigned char> dd(msg.begin(), msg.end());
+      typename Serializer::SerializedContainer dd(msg.begin(), msg.end());
       receiver.processAnswer(dd);
     });
 
@@ -38,7 +39,7 @@ struct ws_transport {
     cv.wait(lk, [&] { return isConnected; });
   }
 
-  void send(std::vector<unsigned char> ms_buf) {
+  void send(Serializer::SerializedContainer ms_buf) {
     auto const ms_string = std::string(begin(ms_buf), end(ms_buf));
     client->send(ms_string, true);
   }
@@ -50,9 +51,8 @@ struct ws_transport {
   }
 
 private:
-  Receiver receiver;
+  Receiver<Serializer> receiver;
   boost::asio::io_context ioc_;
-  ticket_store ts_;
   std::thread runner;
   boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_guard_;
   std::unique_ptr<net::ws_client> client;
@@ -61,5 +61,5 @@ private:
   bool isConnected = false;
 };
 
-template<typename Interface>
-using rpc_ws_client = rpc_async_client<ws_transport, Interface>;
+template<typename Interface, typename Serializer>
+using rpc_ws_client = rpc_async_client<ws_transport<Serializer>, Interface, Serializer>;

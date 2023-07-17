@@ -2,9 +2,9 @@
 
 #include "../log.h"
 
-template <typename Interface>
-rpc_mqtt_server<Interface>::MQTT_CO::v5_unsubscribe_handler
-rpc_mqtt_server<Interface>::get_unsubscribe_handler(std::weak_ptr<con_t>& wp) {
+template <typename Interface, typename Serializer>
+rpc_mqtt_server<Interface, Serializer>::MQTT_CO::v5_unsubscribe_handler
+rpc_mqtt_server<Interface, Serializer>::get_unsubscribe_handler(std::weak_ptr<con_t>& wp) {
   return [this, wp]
       (packet_id_t packet_id,
        std::vector<MQTT_NS::unsubscribe_entry> entries,
@@ -21,9 +21,9 @@ rpc_mqtt_server<Interface>::get_unsubscribe_handler(std::weak_ptr<con_t>& wp) {
         return true;
       };
 }
-template <typename Interface>
-rpc_mqtt_server<Interface>::MQTT_CO::v5_subscribe_handler
-rpc_mqtt_server<Interface>::get_subscribe_handler(std::weak_ptr<con_t>& wp) {
+template <typename Interface, typename Serializer>
+rpc_mqtt_server<Interface, Serializer>::MQTT_CO::v5_subscribe_handler
+rpc_mqtt_server<Interface, Serializer>::get_subscribe_handler(std::weak_ptr<con_t>& wp) {
   return [this, wp]
       (packet_id_t packet_id,
        std::vector<MQTT_NS::subscribe_entry> entries,
@@ -45,9 +45,10 @@ rpc_mqtt_server<Interface>::get_subscribe_handler(std::weak_ptr<con_t>& wp) {
         return true;
       };
 }
-template <typename Interface>
-rpc_mqtt_server<Interface>::MQTT_CO::v5_publish_handler
-rpc_mqtt_server<Interface>::get_publish_handler(std::weak_ptr<con_t>& wp) {
+
+template <typename Interface, typename Serializer>
+rpc_mqtt_server<Interface, Serializer>::MQTT_CO::v5_publish_handler
+rpc_mqtt_server<Interface, Serializer>::get_publish_handler(std::weak_ptr<con_t>& wp) {
   return [this, wp]
       (MQTT_NS::optional<packet_id_t> packet_id,
        MQTT_NS::publish_options pubopts,
@@ -79,9 +80,9 @@ rpc_mqtt_server<Interface>::get_publish_handler(std::weak_ptr<con_t>& wp) {
       };
 }
 
-template <typename Interface>
-rpc_mqtt_server<Interface>::MQTT_CO::v5_connect_handler
-rpc_mqtt_server<Interface>::get_connect_handler(std::weak_ptr<con_t>& wp) {
+template <typename Interface, typename Serializer>
+rpc_mqtt_server<Interface, Serializer>::MQTT_CO::v5_connect_handler
+rpc_mqtt_server<Interface, Serializer>::get_connect_handler(std::weak_ptr<con_t>& wp) {
   return [this, wp]
       (MQTT_NS::buffer client_id,
        MQTT_NS::optional<MQTT_NS::buffer> username,
@@ -107,9 +108,9 @@ rpc_mqtt_server<Interface>::get_connect_handler(std::weak_ptr<con_t>& wp) {
       };
 }
 
-template <typename Interface>
-rpc_mqtt_server<Interface>::MQTT_CO::error_handler
-rpc_mqtt_server<Interface>::get_error_handler(std::weak_ptr<con_t>& wp) {
+template <typename Interface, typename Serializer>
+rpc_mqtt_server<Interface, Serializer>::MQTT_CO::error_handler
+rpc_mqtt_server<Interface, Serializer>::get_error_handler(std::weak_ptr<con_t>& wp) {
   return [this, wp]
       (MQTT_NS::error_code ec){
         LogErr("[server] error: ", ec.message());
@@ -119,9 +120,9 @@ rpc_mqtt_server<Interface>::get_error_handler(std::weak_ptr<con_t>& wp) {
       };
 }
 
-template <typename Interface>
-rpc_mqtt_server<Interface>::MQTT_CO::v5_disconnect_handler
-rpc_mqtt_server<Interface>::get_disconnect_handler(std::weak_ptr<con_t>& wp) {
+template <typename Interface, typename Serializer>
+rpc_mqtt_server<Interface, Serializer>::MQTT_CO::v5_disconnect_handler
+rpc_mqtt_server<Interface, Serializer>::get_disconnect_handler(std::weak_ptr<con_t>& wp) {
   return [this, wp](MQTT_NS::v5::disconnect_reason_code reason_code, const MQTT_NS::v5::properties& /*props*/){
     Log("[server] disconnect received.");
     auto sp = wp.lock();
@@ -130,9 +131,9 @@ rpc_mqtt_server<Interface>::get_disconnect_handler(std::weak_ptr<con_t>& wp) {
   };
 }
 
-template <typename Interface>
-rpc_mqtt_server<Interface>::MQTT_CO::close_handler
-rpc_mqtt_server<Interface>::get_close_handler(std::weak_ptr<con_t>& wp) {
+template <typename Interface, typename Serializer>
+rpc_mqtt_server<Interface, Serializer>::MQTT_CO::close_handler
+rpc_mqtt_server<Interface, Serializer>::get_close_handler(std::weak_ptr<con_t>& wp) {
   return [this, wp](){
     Log("[server] closed.");
     auto sp = wp.lock();

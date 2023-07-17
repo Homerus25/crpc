@@ -6,18 +6,22 @@
 
 #include <thread>
 
-template <typename Interface>
-struct no_network_server : public rpc_server<Interface> {
+template <typename Interface,  typename Serializer>
+struct no_network_server : public rpc_server<Interface, Serializer> {
+private:
+  typedef Serializer::SerializedContainer SerializedContainer;
+
+public:
   explicit no_network_server()
     : work_guard_(boost::asio::make_work_guard(ioc_))
   {}
 
-  void receive(std::unique_ptr<std::vector<uint8_t>> message, std::function<void(std::unique_ptr<std::vector<uint8_t>>)> client) {
+  void receive(std::unique_ptr<SerializedContainer> message, std::function<void(std::unique_ptr<SerializedContainer>)> client) {
     boost::asio::post(ioc_,
         [this, ms(std::move(message.release())), cl = std::move(client)]() {
           auto const response = this->process_message(std::move(*ms));
           delete ms;
-          cl(std::move(std::make_unique<std::vector<uint8_t>>(std::move(response.value()))));
+          cl(std::move(std::make_unique<SerializedContainer>(std::move(response.value()))));
         });
   }
 

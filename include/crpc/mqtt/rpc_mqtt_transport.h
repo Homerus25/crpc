@@ -9,9 +9,11 @@
 
 #include "../log.h"
 #include "../receiver.h"
+#include "../rpc_async_client.h"
 
+template<class Serializer>
 struct rpc_mqtt_transport {
-    explicit rpc_mqtt_transport(Receiver rec, std::string const& name = "127.0.0.1", std::uint16_t port = 2000)
+    explicit rpc_mqtt_transport(Receiver<Serializer> rec, std::string const& name = "127.0.0.1", std::uint16_t port = 2000)
       : receiver(rec)
     {
       mqtt_client_ = mqtt::make_client(ioc_, name, port, mqtt::protocol_version::v5);
@@ -33,7 +35,7 @@ struct rpc_mqtt_transport {
       }
   }
 
-  void send(std::vector<unsigned char> ms_buf) {
+  void send(Serializer::SerializedContainer ms_buf) {
       mqtt_client_->publish(0, MQTT_NS::allocate_buffer(topic), MQTT_NS::allocate_buffer(ms_buf.begin(), ms_buf.end()));
   }
 
@@ -47,7 +49,7 @@ struct rpc_mqtt_transport {
   }
 
 private:
-  Receiver receiver;
+  Receiver<Serializer> receiver;
   const std::string topic = "mqtt_client_cpp/topic1";
 
   using MQTT_CO = mqtt::callable_overlay<mqtt::client<mqtt::tcp_endpoint<boost::asio::ip::tcp::socket, mqtt::strand>>>;
@@ -87,5 +89,5 @@ private:
 
 #include "mqtt_client_handler.h"
 
-template<typename Interface>
-using rpc_mqtt_client = rpc_async_client<rpc_mqtt_transport, Interface>;
+template<typename Interface, typename Serializer>
+using rpc_mqtt_client = rpc_async_client<rpc_mqtt_transport<Serializer>, Interface, Serializer>;

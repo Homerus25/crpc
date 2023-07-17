@@ -14,8 +14,8 @@
 #include "mqtt_utils.h"
 
 
-template <typename Interface>
-class rpc_mqtt_server : public rpc_server<Interface> {
+template <typename Interface, typename Serializer>
+class rpc_mqtt_server : public rpc_server<Interface, Serializer> {
 public:
   explicit rpc_mqtt_server(std::uint16_t port = 2000)
       : port_(port),
@@ -60,16 +60,16 @@ private:
 
 #include "mqtt_server_handler.h"
 
-template<typename Interface>
-void rpc_mqtt_server<Interface>::run(int threads_count)
+template<typename Interface, typename Serializer>
+void rpc_mqtt_server<Interface, Serializer>::run(int threads_count)
 {
   running = true;
   for(int i=0; i<threads_count; ++i)
     runner.emplace_back([&](){ ioc.run(); });
 }
 
-template<typename Interface>
-void rpc_mqtt_server<Interface>::set_handler(
+template<typename Interface, typename Serializer>
+void rpc_mqtt_server<Interface, Serializer>::set_handler(
     mqtt::server<mqtt::strand, std::mutex, std::lock_guard, 2>& server) {
 
   server.set_error_handler(

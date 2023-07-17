@@ -2,9 +2,10 @@
 
 #include "../../src/benchmark/benchmark_interface.h"
 #include "crpc/mqtt/rpc_mqtt_transport.h"
+#include "crpc/serialization/cista.h"
 
 int main(int argc, char* argv[]) {
-  rpc_mqtt_client<benchmark_interface> client{std::string("127.0.0.1"), static_cast<std::uint16_t>(2000)};
+  rpc_mqtt_client<benchmark_interface, CistaSerialzer> client{std::string("127.0.0.1"), static_cast<std::uint16_t>(2000)};
   std::string test_str("Hello Big Data Echo");
 
   auto res_hello = client.call(&benchmark_interface::say_hello, data::string("peter"));

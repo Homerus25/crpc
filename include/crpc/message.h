@@ -1,17 +1,9 @@
 #pragma once
 
-#include "cista/containers/vector.h"
-
-/*
-struct message {
-   unsigned fn_idx;
-   cista::offset::vector<unsigned char> payload_;
-};
-*/
-
+template<typename SerializedContainer>
 struct message {
     uint64_t ticket_;
     unsigned fn_idx;
-    cista::offset::vector<unsigned char> payload_;
+    SerializedContainer payload_;
 };
 

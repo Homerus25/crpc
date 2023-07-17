@@ -13,8 +13,8 @@
 using namespace net;
 using net::web_server;
 
-template <typename Interface>
-class http_ws_server : public rpc_server<Interface>  {
+template <typename Interface, typename Serializer>
+class http_ws_server : public rpc_server<Interface, Serializer>  {
 public:
   http_ws_server() {
     webs_ = std::unique_ptr<web_server>(new web_server{ioc_});

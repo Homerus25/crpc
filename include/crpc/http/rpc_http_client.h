@@ -13,8 +13,9 @@
 #include <memory>
 #include <queue>
 
+template<typename Serializer>
 struct http_transport {
-  explicit http_transport(Receiver rec, std::string url = "http://127.0.0.1:9000/", unsigned int const port = 9000u)
+  explicit http_transport(Receiver<Serializer> rec, std::string url = "http://127.0.0.1:9000/", unsigned int const port = 9000u)
       : receiver(rec), url_(std::move(url)), work_guard_(boost::asio::make_work_guard(ios_))
   {
     runner_ = std::thread([&](){ ios_.run(); });
@@ -38,7 +39,7 @@ struct http_transport {
     }
   }
 
-  void send(std::vector<unsigned char> ms_buf) {
+  void send(Serializer::SerializedContainer ms_buf) {
     std::string ms_string(begin(ms_buf), end(ms_buf));
 
     auto s_req = std::make_shared<net::http::client::request>(
@@ -70,7 +71,7 @@ struct http_transport {
       if (ec) {
         LogErr("error: ", ec.message());
       } else {
-        std::vector<u_int8_t> dd(res.body.begin(), res.body.end());
+        typename Serializer::SerializedContainer dd(res.body.begin(), res.body.end());
         this->receiver.processAnswer(dd);
         queryInProgress = false;
         ios_.post([this](){
@@ -90,9 +91,8 @@ struct http_transport {
   }
 
 private:
-  Receiver receiver;
+  Receiver<Serializer> receiver;
   boost::asio::io_service ios_;
-  ticket_store ts_;
   std::string url_;
   std::thread runner_;
   boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_guard_;
@@ -102,5 +102,5 @@ private:
   std::queue<std::shared_ptr<net::http::client::request>> queue_;
 };
 
-template<typename Interface>
-using rpc_http_client = rpc_async_client<http_transport, Interface>;
+template<typename Interface, typename Serializer>
+using rpc_http_client = rpc_async_client<http_transport<Serializer>, Interface, Serializer>;

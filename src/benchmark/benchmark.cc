@@ -13,8 +13,11 @@
 
 #define DATASIZE 1024 * 32
 
-template<template <typename> typename Server, template <typename> typename Client, typename Interface, bool isFloodBench>
+template<template <typename, typename> typename Server, template <typename, typename> typename Client, typename Interface, typename Serializer, bool isFloodBench>
 class Bench {
+private:
+  typedef Server<Interface, Serializer> ServerType;
+  typedef Client<Interface, Serializer> ClientType;
 public:
   Bench(int, int);
 
@@ -32,7 +35,7 @@ protected:
   void setStateCounter(auto& state) const;
 
   template <int funcNum>
-  auto getFloodBenchFunction(std::unique_ptr<Client<Interface>>& client) {
+  auto getFloodBenchFunction(std::unique_ptr<ClientType>& client) {
     return [&client, this]() {
       std::vector<decltype(benchmarkFunction<funcNum>(client))> resp;
       resp.reserve(requests_per_client);
@@ -47,7 +50,7 @@ protected:
   }
 
   template <int funcNum>
-  auto getLatencyBenchFunction(std::unique_ptr<Client<Interface>>& client) {
+  auto getLatencyBenchFunction(std::unique_ptr<ClientType>& client) {
     return [&client, this]() {
       std::vector<std::chrono::nanoseconds> times;
       times.reserve(requests_per_client);
@@ -61,14 +64,14 @@ protected:
     };
   }
 
-  std::unique_ptr<Server<Interface>> server;
-  std::vector<std::unique_ptr<Client<Interface>>> clients;
+  std::unique_ptr<ServerType> server;
+  std::vector<std::unique_ptr<Client<Interface, Serializer>>> clients;
   int requests_per_client;
   std::vector<std::vector<std::chrono::nanoseconds>> latencies;
 };
 
-template <template <typename> typename Server, template <typename> typename Client, typename Interface, bool isFloodBench>
-void Bench<Server, Client, Interface, isFloodBench>::writeLatencies(
+template<template <typename, typename> typename Server, template <typename, typename> typename Client, typename Interface, typename Serializer, bool isFloodBench>
+void Bench<Server, Client, Interface, Serializer, isFloodBench>::writeLatencies(
     std::string filename) {
 
   std::fstream file(filename, std::ios_base::out);
@@ -87,16 +90,16 @@ void Bench<Server, Client, Interface, isFloodBench>::writeLatencies(
 
 }
 
-template <template <typename> typename Server, template <typename> typename Client, typename Interface, bool isFloodBench>
-void Bench<Server, Client, Interface, isFloodBench>::setStateCounter(auto& state) const {
+template<template <typename, typename> typename Server, template <typename, typename> typename Client, typename Interface, typename Serializer, bool isFloodBench>
+void Bench<Server, Client, Interface, Serializer, isFloodBench>::setStateCounter(auto& state) const {
   state.counters["Requests"] = clients.size() * requests_per_client;
   state.counters["Req_per_second"] = benchmark::Counter(
       clients.size() * requests_per_client, benchmark::Counter::kIsRate);
 }
 
-template <template <typename> typename Server, template <typename> typename Client, typename Interface, bool isFloodBench>
+template<template <typename, typename> typename Server, template <typename, typename> typename Client, typename Interface, typename Serializer, bool isFloodBench>
 template <int funcNum>
-void Bench<Server, Client, Interface, isFloodBench>::run(auto& state) {
+void Bench<Server, Client, Interface, Serializer, isFloodBench>::run(auto& state) {
   if constexpr (funcNum != 0)
     requests_per_client /= 8;
 
@@ -135,60 +138,62 @@ void Bench<Server, Client, Interface, isFloodBench>::run(auto& state) {
   }
 }
 
-template<template <typename> typename Server, template <typename> typename Client, typename Interface, bool isFloodBench>
-Bench<Server, Client, Interface, isFloodBench>::Bench(int server_concurrency, int client_concurrency) {
+template<template <typename, typename> typename Server, template <typename, typename> typename Client, typename Interface, typename Serializer, bool isFloodBench>
+Bench<Server, Client, Interface, Serializer, isFloodBench>::Bench(int server_concurrency, int client_concurrency) {
   startServer(server_concurrency);
   buildClients(client_concurrency);
-  const int requests = 64 * 1024;
+  const int requests = 1 * 1024;
   requests_per_client = requests / client_concurrency;
 }
 
-template <template <typename> typename Server, template <typename> typename Client, typename Interface, bool isFloodBench>
-Bench<Server, Client, Interface, isFloodBench>::~Bench() {
+template<template <typename, typename> typename Server, template <typename, typename> typename Client, typename Interface, typename Serializer, bool isFloodBench>
+Bench<Server, Client, Interface, Serializer, isFloodBench>::~Bench() {
   for (auto& client:clients)
     client->stop();
   server->stop();
 }
 
-template<template <typename> typename Server, template <typename> typename Client, typename Interface, bool isFloodBench>
-void Bench<Server, Client, Interface, isFloodBench>::startServer(const int server_concurrency) {
-  server = std::make_unique<Server<Interface>>();
+template<template <typename, typename> typename Server, template <typename, typename> typename Client, typename Interface, typename Serializer, bool isFloodBench>
+void Bench<Server, Client, Interface, Serializer, isFloodBench>::startServer(const int server_concurrency) {
+  server = std::make_unique<ServerType>();
   register_benchmark_interface(*server);
   server->run(server_concurrency);
 }
 
-template<template <typename> typename Server, template <typename> typename Client, typename Interface, bool isFloodBench>
-void Bench<Server, Client, Interface, isFloodBench>::buildClients(const int client_concurrency) {
+template<template <typename, typename> typename Server, template <typename, typename> typename Client, typename Interface, typename Serializer, bool isFloodBench>
+void Bench<Server, Client, Interface, Serializer, isFloodBench>::buildClients(const int client_concurrency) {
   for(int i=0; i<client_concurrency; ++i) {
-    clients.push_back(std::make_unique<Client<Interface>>());
+    clients.push_back(std::make_unique<ClientType>());
   }
 }
 
 template<>
-void Bench<no_network_server, no_network_client, benchmark_interface, true>::buildClients(const int client_concurrency) {
-  std::function<void(std::unique_ptr<std::vector<uint8_t>>, std::function<void(std::unique_ptr<std::vector<uint8_t>>)>)> const transportLambda = [this](std::unique_ptr<std::vector<uint8_t>> message, auto rcv) {
+void Bench<no_network_server, no_network_client, benchmark_interface, CistaSerialzer, true>::buildClients(const int client_concurrency) {
+  std::function<void(std::unique_ptr<CistaSerialzer::SerializedContainer>, std::function<void(std::unique_ptr<CistaSerialzer::SerializedContainer>)>)> const transportLambda = [this](std::unique_ptr<CistaSerialzer::SerializedContainer> message, auto rcv) {
     server->receive(std::move(message), rcv);
   };
+
   for(int i=0; i<client_concurrency; ++i) {
-    clients.push_back(std::make_unique<no_network_client<benchmark_interface>>(transportLambda));
+    clients.push_back(std::make_unique<ClientType>(transportLambda));
   }
 }
 
 template<>
-void Bench<no_network_server, no_network_client, benchmark_interface, false>::buildClients(const int client_concurrency) {
-  std::function<void(std::unique_ptr<std::vector<uint8_t>>, std::function<void(std::unique_ptr<std::vector<uint8_t>>)>)> const transportLambda = [this](std::unique_ptr<std::vector<uint8_t>> message, auto rcv) {
+void Bench<no_network_server, no_network_client, benchmark_interface, CistaSerialzer, false>::buildClients(const int client_concurrency) {
+  std::function<void(std::unique_ptr<CistaSerialzer::SerializedContainer>, std::function<void(std::unique_ptr<CistaSerialzer::SerializedContainer>)>)> const transportLambda = [this](std::unique_ptr<CistaSerialzer::SerializedContainer> message, auto rcv) {
     server->receive(std::move(message), rcv);
   };
+
   for(int i=0; i<client_concurrency; ++i) {
-    clients.push_back(std::make_unique<no_network_client<benchmark_interface>>(transportLambda));
+    clients.push_back(std::make_unique<ClientType>(transportLambda));
   }
 }
 
-template<template <typename> typename Server, template <typename> typename Client, typename Interface>
-using FloodBench = Bench<Server, Client, Interface, true>;
+template<template <typename, typename> typename Server, template <typename, typename> typename Client, typename Interface, typename Serializer>
+using FloodBench = Bench<Server, Client, Interface, Serializer, true>;
 
-template<template <typename> typename Server, template <typename> typename Client, typename Interface>
-using LatencyBench = Bench<Server, Client, Interface, false>;
+template<template <typename, typename> typename Server, template <typename, typename> typename Client, typename Interface, typename Serializer>
+using LatencyBench = Bench<Server, Client, Interface, Serializer, false>;
 
 
 template<int funcNum>
@@ -209,53 +214,53 @@ auto benchmarkFunction(auto& client) {
 
 template <int funcNum>
 static void BM_NoNetwork(benchmark::State& state) {
-  FloodBench<no_network_server, no_network_client, benchmark_interface> bench(state.range(0), state.range(1));
+  FloodBench<no_network_server, no_network_client, benchmark_interface, CistaSerialzer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
 }
 
 template <int funcNum>
 static void BM_HTTP(benchmark::State& state) {
-  FloodBench<http_ws_server, rpc_http_client, benchmark_interface> bench(state.range(0), state.range(1));
+  FloodBench<http_ws_server, rpc_http_client, benchmark_interface, CistaSerialzer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
 }
 
 template <int funcNum>
 static void BM_WS(benchmark::State& state) {
-  FloodBench<http_ws_server, rpc_ws_client, benchmark_interface> bench(state.range(0), state.range(1));
+  FloodBench<http_ws_server, rpc_ws_client, benchmark_interface, CistaSerialzer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
 }
 
 template <int funcNum>
 static void BM_MQTT(auto& state) {
-  FloodBench<rpc_mqtt_server, rpc_mqtt_client, benchmark_interface> bench(state.range(0), state.range(1));
+  FloodBench<rpc_mqtt_server, rpc_mqtt_client, benchmark_interface, CistaSerialzer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
 }
 
 
 template <int funcNum>
 static void BM_Latency_NoNetwork(benchmark::State& state) {
-  LatencyBench<no_network_server, no_network_client, benchmark_interface> bench(state.range(0), state.range(1));
+  LatencyBench<no_network_server, no_network_client, benchmark_interface, CistaSerialzer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
   bench.writeLatencies("latencies_NoNetwork_<" + std::to_string(funcNum) + ">.txt");
 }
 
 template <int funcNum>
 static void BM_Latency_HTTP(benchmark::State& state) {
-  LatencyBench<http_ws_server, rpc_http_client, benchmark_interface> bench(state.range(0), state.range(1));
+  LatencyBench<http_ws_server, rpc_http_client, benchmark_interface, CistaSerialzer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
   bench.writeLatencies("latencies_HTTP_<" + std::to_string(funcNum) + ">.txt");
 }
 
 template <int funcNum>
 static void BM_Latency_WS(benchmark::State& state) {
-  LatencyBench<http_ws_server, rpc_ws_client, benchmark_interface> bench(state.range(0), state.range(1));
+  LatencyBench<http_ws_server, rpc_ws_client, benchmark_interface, CistaSerialzer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
   bench.writeLatencies("latencies_WS_<" + std::to_string(funcNum) + ">.txt");
 }
 
 template <int funcNum>
 static void BM_Latency_MQTT(benchmark::State& state) {
-  LatencyBench<rpc_mqtt_server, rpc_mqtt_client, benchmark_interface> bench(state.range(0), state.range(1));
+  LatencyBench<rpc_mqtt_server, rpc_mqtt_client, benchmark_interface,  CistaSerialzer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
   bench.writeLatencies("latencies_MQTT_<" + std::to_string(funcNum) + ">.txt");
 }
@@ -285,7 +290,6 @@ BENCHMARK(BM_MQTT<0>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_MQTT<1>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_MQTT<2>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_MQTT<3>)->Apply(FloodBenchArguments);
-
 
 BENCHMARK(BM_NoNetwork<0>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_NoNetwork<1>)->Apply(FloodBenchArguments);
