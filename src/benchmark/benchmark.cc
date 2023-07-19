@@ -12,6 +12,8 @@
 
 #include "crpc/serialization/cista.h"
 #include "crpc/serialization/no_serialization.h"
+#include "crpc/serialization/glaze_json.h"
+#include "crpc/serialization/glaze_binary.h"
 
 template <int funcNum>
 static void BM_NoNetwork(benchmark::State& state) {
@@ -23,6 +25,20 @@ template <int funcNum>
 static void BM_NoNetwork_NoSerial(benchmark::State& state) {
   FloodBench<no_network_server, no_network_client, benchmark_interface,
              NoSerializer> bench(state.range(0), state.range(1));
+  bench.run<funcNum>(state);
+}
+
+template <int funcNum>
+static void BM_NoNetwork_GlazeJSON(benchmark::State& state) {
+  FloodBench<no_network_server, no_network_client, benchmark_interface,
+             GlazeJSONSerializer> bench(state.range(0), state.range(1));
+  bench.run<funcNum>(state);
+}
+
+template <int funcNum>
+static void BM_NoNetwork_GlazeBinary(benchmark::State& state) {
+  FloodBench<no_network_server, no_network_client, benchmark_interface,
+             GlazeBinarySerializer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
 }
 
@@ -106,6 +122,8 @@ BENCHMARK(BM_NoNetwork<3>)->Apply(FloodBenchArguments);
 
 
 BENCHMARK(BM_NoNetwork_NoSerial<0>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_GlazeJSON<0>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_GlazeBinary<0>)->Apply(FloodBenchArguments);
 
 
 BENCHMARK(BM_Latency_NoNetwork<0>)->Apply(LatencyBenchArguments);

@@ -27,6 +27,7 @@ include(cmake/pkg.cmake)
 include_directories(deps/net)
 include_directories(deps/benchmark/include)
 include_directories(deps/mqtt_cpp/include)
+include_directories(deps/glaze/include)
 
 
 ################################

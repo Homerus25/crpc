@@ -35,6 +35,40 @@ protected:
   void setStateCounter(auto& state) const;
 
   template <int funcNum>
+  auto benchmarkFunction(auto& client) {
+    if constexpr (std::is_same_v<Serializer, CistaSerialzer>) {
+      if constexpr (funcNum == 0)
+        return client->call(&benchmark_interface<CistaSerialzer>::say_hello,
+                            data::string("peter"));
+      else if constexpr (funcNum == 1)
+        return client->call(&benchmark_interface<CistaSerialzer>::average,
+                            data::vector<double>(DATASIZE / sizeof(double)));
+      else if constexpr (funcNum == 2)
+        return client->call(&benchmark_interface<CistaSerialzer>::get_rand_nums,
+                            int(DATASIZE / sizeof(double)));
+      else if constexpr (funcNum == 3)
+        return client->call(
+            &benchmark_interface<CistaSerialzer>::send_rcv_large_data,
+            data::vector<unsigned char>(DATASIZE / sizeof(unsigned char)));
+    }
+    else {
+      if constexpr (funcNum == 0)
+        return client->call(&benchmark_interface<Serializer>::say_hello,
+                            std::string("peter"));
+      else if constexpr (funcNum == 1)
+        return client->call(&benchmark_interface<Serializer>::average,
+                            std::vector<double>(DATASIZE / sizeof(double)));
+      else if constexpr (funcNum == 2)
+        return client->call(&benchmark_interface<Serializer>::get_rand_nums,
+                            int(DATASIZE / sizeof(double)));
+      else if constexpr (funcNum == 3)
+        return client->call(
+            &benchmark_interface<Serializer>::send_rcv_large_data,
+            std::vector<unsigned char>(DATASIZE / sizeof(unsigned char)));
+    }
+  }
+
+  template <int funcNum>
   auto getFloodBenchFunction(std::unique_ptr<ClientType>& client) {
     return [&client, this]() {
       std::vector<decltype(benchmarkFunction<funcNum>(client))> resp;
@@ -156,7 +190,7 @@ Bench<Interface, Serializer, isFloodBench, Server, Client>::~Bench() {
 template<typename Interface, typename Serializer, bool isFloodBench, template <typename, typename> typename Server, template <typename, typename> typename Client>
 void Bench<Interface, Serializer, isFloodBench, Server, Client>::startServer(const int server_concurrency) {
   server = std::make_unique<ServerType>();
-  register_benchmark_interface(*server);
+  register_benchmark_interface<ServerType, Serializer>(*server);
   server->run(server_concurrency);
 }
 
@@ -177,39 +211,9 @@ void Bench<Interface, Serializer, isFloodBench, Server, Client>::buildClients(co
     }
   }
 }
-/*
-template<typename Interface, typename Serializer, bool isFloodBench>
-void Bench<Interface, Serializer, isFloodBench, no_network_server, no_network_client>::buildClients(const int client_concurrency) {
-  std::function<void(std::unique_ptr<CistaSerialzer::SerializedContainer>, std::function<void(std::unique_ptr<CistaSerialzer::SerializedContainer>)>)> const transportLambda = [this](std::unique_ptr<CistaSerialzer::SerializedContainer> message, auto rcv) {
-    server->receive(std::move(message), rcv);
-  };
 
-  for(int i=0; i<client_concurrency; ++i) {
-    clients.push_back(std::make_unique<ClientType>(transportLambda));
-  }
-}
-*/
+template<template <typename, typename> typename Server, template <typename, typename> typename Client, template<typename> typename Interface, typename Serializer>
+using FloodBench = Bench<Interface<Serializer>, Serializer, true, Server, Client>;
 
-
-template<template <typename, typename> typename Server, template <typename, typename> typename Client, typename Interface, typename Serializer>
-using FloodBench = Bench<Interface, Serializer, true, Server, Client>;
-
-template<template <typename, typename> typename Server, template <typename, typename> typename Client, typename Interface, typename Serializer>
-using LatencyBench = Bench<Interface, Serializer, false, Server, Client>;
-
-
-template<int funcNum>
-auto benchmarkFunction(auto& client) {
-  if constexpr (funcNum == 0)
-    return client->call(&benchmark_interface::say_hello,
-                        data::string("peter"));
-  else if constexpr (funcNum == 1)
-    return client->call(&benchmark_interface::average,
-                        data::vector<double>(DATASIZE / sizeof(double)));
-  else if constexpr (funcNum == 2)
-    return client->call(&benchmark_interface::get_rand_nums,
-                        int(DATASIZE / sizeof(double)));
-  else if constexpr (funcNum == 3)
-    return client->call(&benchmark_interface::send_rcv_large_data,
-                        data::vector<unsigned char>(DATASIZE / sizeof(unsigned char)));
-}
+template<template <typename, typename> typename Server, template <typename, typename> typename Client, template<typename> typename Interface, typename Serializer>
+using LatencyBench = Bench<Interface<Serializer>, Serializer, false, Server, Client>;

@@ -21,3 +21,6 @@
 [benchmark]
   url=git@github.com:google/benchmark.git
   branch=main
+[glaze]
+  url=git@github.com:stephenberry/glaze.git
+  branch=main

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <any>
+#include <memory>
 
 struct NoSerializer {
   typedef std::any SerializedContainer;
