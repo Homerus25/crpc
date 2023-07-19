@@ -13,14 +13,10 @@ public:
   {}
 
   void processAnswer(Serializer::SerializedContainer answer) {
-    const message_t* ms = deserialzeMessage(answer);
+    auto ms = Serializer::template deserialize<message_t>(answer);
     this->ts_.setValue(ms->ticket_, ms->payload_);
   }
 
 private:
-  const message_t* const deserialzeMessage(/*const*/ Serializer::SerializedContainer& answer) const {
-    return Serializer::template deserialize<message_t>(answer);
-  }
-
   ticket_store<typename Serializer::SerializedContainer>& ts_;
 };

@@ -1,6 +1,7 @@
 #include <benchmark/benchmark.h>
 #include "benchmark_custom.h"
 #include "benchmark_interface.h"
+
 #include "crpc/no_network/no_network_client.h"
 #include "crpc/no_network/no_network_server.h"
 #include "crpc/http/http_ws_server.h"
@@ -8,6 +9,9 @@
 #include "crpc/http/rpc_ws_client.h"
 #include "crpc/mqtt/rpc_mqtt_server.h"
 #include "crpc/mqtt/rpc_mqtt_transport.h"
+
+#include "crpc/serialization/cista.h"
+#include "crpc/serialization/no_serialization.h"
 
 #include <fstream>
 
@@ -189,6 +193,31 @@ void Bench<no_network_server, no_network_client, benchmark_interface, CistaSeria
   }
 }
 
+template<>
+void Bench<no_network_server, no_network_client, benchmark_interface,
+           NoSerializer, true>::buildClients(const int client_concurrency) {
+  std::function<void(std::unique_ptr<NoSerializer::SerializedContainer>, std::function<void(std::unique_ptr<NoSerializer::SerializedContainer>)>)> const transportLambda = [this](std::unique_ptr<NoSerializer::SerializedContainer> message, auto rcv) {
+    server->receive(std::move(message), rcv);
+  };
+
+  for(int i=0; i<client_concurrency; ++i) {
+    clients.push_back(std::make_unique<ClientType>(transportLambda));
+  }
+}
+
+template<>
+void Bench<no_network_server, no_network_client, benchmark_interface,
+           NoSerializer, false>::buildClients(const int client_concurrency) {
+  std::function<void(std::unique_ptr<NoSerializer::SerializedContainer>, std::function<void(std::unique_ptr<NoSerializer::SerializedContainer>)>)> const transportLambda = [this](std::unique_ptr<NoSerializer::SerializedContainer> message, auto rcv) {
+    server->receive(std::move(message), rcv);
+  };
+
+  for(int i=0; i<client_concurrency; ++i) {
+    clients.push_back(std::make_unique<ClientType>(transportLambda));
+  }
+}
+
+
 template<template <typename, typename> typename Server, template <typename, typename> typename Client, typename Interface, typename Serializer>
 using FloodBench = Bench<Server, Client, Interface, Serializer, true>;
 
@@ -215,6 +244,13 @@ auto benchmarkFunction(auto& client) {
 template <int funcNum>
 static void BM_NoNetwork(benchmark::State& state) {
   FloodBench<no_network_server, no_network_client, benchmark_interface, CistaSerialzer> bench(state.range(0), state.range(1));
+  bench.run<funcNum>(state);
+}
+
+template <int funcNum>
+static void BM_NoNetwork_NoSerial(benchmark::State& state) {
+  FloodBench<no_network_server, no_network_client, benchmark_interface,
+             NoSerializer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
 }
 
@@ -295,6 +331,9 @@ BENCHMARK(BM_NoNetwork<0>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_NoNetwork<1>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_NoNetwork<2>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_NoNetwork<3>)->Apply(FloodBenchArguments);
+
+
+BENCHMARK(BM_NoNetwork_NoSerial<0>)->Apply(FloodBenchArguments);
 
 
 BENCHMARK(BM_Latency_NoNetwork<0>)->Apply(LatencyBenchArguments);

@@ -4,17 +4,16 @@
 #include <future>
 #include <iostream>
 
-#include "serialization/cista.h"
 #include "rpc_fn.h"
 
 #include "message.h"
 #include "ticket_store.h"
 #include "receiver.h"
 
-template<typename ReturnType, typename SerializedContainer>
+template<typename ReturnType, typename Serializer>
 class return_object {
 public:
-    explicit return_object(std::future<SerializedContainer>& fut)
+    explicit return_object(std::future<typename Serializer::SerializedContainer>& fut)
         : future(std::move(fut))
     {}
 
@@ -24,11 +23,11 @@ public:
         }
         auto res = future.get();
         if constexpr (!std::is_same_v<ReturnType, void>)
-          return *CistaSerialzer::deserialize<ReturnType>(res);
+          return *Serializer::template deserialize<ReturnType>(res);
     }
 
 private:
-    std::future<SerializedContainer> future;
+    std::future<typename Serializer::SerializedContainer> future;
 };
 
 template <typename Transport, typename Interface, typename Serializer>
@@ -36,15 +35,15 @@ class rpc_async_client {
 public:
     template <typename... Args>
     rpc_async_client(Args&&... args)  // NOLINT
-    : transport{std::move(Receiver<CistaSerialzer>(ts_)), std::forward<Args>(args)...} {}
+    : transport{std::move(Receiver<Serializer>(ts_)), std::forward<Args>(args)...} {}
 
 
     template <typename ReturnType, typename... Args>
-    return_object<ReturnType, typename Serializer::SerializedContainer> call(fn<ReturnType, Args...> Interface::*const member_ptr,
+    return_object<ReturnType, Serializer> call(fn<ReturnType, Args...> Interface::*const member_ptr,
                     Args&&... args) {
         std::future<typename Serializer::SerializedContainer> response;
         response = sendMS(index_of_member(member_ptr), args...);
-        return return_object<ReturnType, typename Serializer::SerializedContainer>(response);
+        return return_object<ReturnType, Serializer>(response);
     }
 
     template < typename... Args>
@@ -72,7 +71,7 @@ public:
     template < typename... Args>
     auto serializeArgs(Args&&... args) const {
         auto tup = std::make_tuple(std::forward<Args>(args)...);
-        return CistaSerialzer::serialize(tup);
+        return Serializer::serialize(tup);
     }
 
     void stop() {
