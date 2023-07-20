@@ -39,17 +39,17 @@ protected:
     if constexpr (std::is_same_v<Serializer, CistaSerialzer>) {
       if constexpr (funcNum == 0)
         return client->call(&benchmark_interface<CistaSerialzer>::say_hello,
-                            data::string("peter"));
+                            cista::offset::string("peter"));
       else if constexpr (funcNum == 1)
         return client->call(&benchmark_interface<CistaSerialzer>::average,
-                            data::vector<double>(DATASIZE / sizeof(double)));
+                            cista::offset::vector<double>(DATASIZE / sizeof(double)));
       else if constexpr (funcNum == 2)
         return client->call(&benchmark_interface<CistaSerialzer>::get_rand_nums,
                             int(DATASIZE / sizeof(double)));
       else if constexpr (funcNum == 3)
         return client->call(
             &benchmark_interface<CistaSerialzer>::send_rcv_large_data,
-            data::vector<unsigned char>(DATASIZE / sizeof(unsigned char)));
+            cista::offset::vector<unsigned char>(DATASIZE / sizeof(unsigned char)));
     }
     else {
       if constexpr (funcNum == 0)

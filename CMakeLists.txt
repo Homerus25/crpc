@@ -28,6 +28,7 @@ include_directories(deps/net)
 include_directories(deps/benchmark/include)
 include_directories(deps/mqtt_cpp/include)
 include_directories(deps/glaze/include)
+include_directories(external_lib)
 
 
 ################################

@@ -14,6 +14,7 @@
 #include "crpc/serialization/no_serialization.h"
 #include "crpc/serialization/glaze_json.h"
 #include "crpc/serialization/glaze_binary.h"
+#include "crpc/serialization/zpp_bits_serialization.h"
 
 template <int funcNum>
 static void BM_NoNetwork(benchmark::State& state) {
@@ -41,6 +42,14 @@ static void BM_NoNetwork_GlazeBinary(benchmark::State& state) {
              GlazeBinarySerializer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
 }
+
+template <int funcNum>
+static void BM_NoNetwork_ZppBits(benchmark::State& state) {
+  FloodBench<no_network_server, no_network_client, benchmark_interface,
+             ZppBitsSerializer> bench(state.range(0), state.range(1));
+  bench.run<funcNum>(state);
+}
+
 
 template <int funcNum>
 static void BM_HTTP(benchmark::State& state) {
@@ -124,6 +133,7 @@ BENCHMARK(BM_NoNetwork<3>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_NoNetwork_NoSerial<0>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_NoNetwork_GlazeJSON<0>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_NoNetwork_GlazeBinary<0>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_ZppBits<0>)->Apply(FloodBenchArguments);
 
 
 BENCHMARK(BM_Latency_NoNetwork<0>)->Apply(LatencyBenchArguments);
