@@ -78,6 +78,36 @@ static void BM_Latency_NoNetwork(benchmark::State& state) {
 }
 
 template <int funcNum>
+static void BM_Latency_NoNetwork_NoSerial(benchmark::State& state) {
+  LatencyBench<no_network_server, no_network_client, benchmark_interface, NoSerializer> bench(state.range(0), state.range(1));
+  bench.run<funcNum>(state);
+  bench.writeLatencies("latencies_NoNetwork_<" + std::to_string(funcNum) + ">.txt");
+}
+
+template <int funcNum>
+static void BM_Latency_NoNetwork_GlazeJSON(benchmark::State& state) {
+  LatencyBench<no_network_server, no_network_client, benchmark_interface, GlazeJSONSerializer> bench(state.range(0), state.range(1));
+  bench.run<funcNum>(state);
+  bench.writeLatencies("latencies_NoNetwork_<" + std::to_string(funcNum) + ">.txt");
+}
+
+template <int funcNum>
+static void BM_Latency_NoNetwork_GlazeBinary(benchmark::State& state) {
+  LatencyBench<no_network_server, no_network_client, benchmark_interface, GlazeBinarySerializer> bench(state.range(0), state.range(1));
+  bench.run<funcNum>(state);
+  bench.writeLatencies("latencies_NoNetwork_<" + std::to_string(funcNum) + ">.txt");
+}
+
+template <int funcNum>
+static void BM_Latency_NoNetwork_ZppBits(benchmark::State& state) {
+  LatencyBench<no_network_server, no_network_client, benchmark_interface, ZppBitsSerializer> bench(state.range(0), state.range(1));
+  bench.run<funcNum>(state);
+  bench.writeLatencies("latencies_NoNetwork_<" + std::to_string(funcNum) + ">.txt");
+}
+
+
+
+template <int funcNum>
 static void BM_Latency_HTTP(benchmark::State& state) {
   LatencyBench<http_ws_server, rpc_http_client, benchmark_interface, CistaSerialzer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
@@ -108,7 +138,35 @@ static void LatencyBenchArguments(benchmark::internal::Benchmark* b) {
   b->UseRealTime()->Iterations(1)->ArgPair(1, 1)->Unit(benchmark::kMillisecond);
 }
 
+//Flood Benchs
+//Only Serializers
+BENCHMARK(BM_NoNetwork_NoSerial<0>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_NoSerial<1>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_NoSerial<2>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_NoSerial<3>)->Apply(FloodBenchArguments);
 
+BENCHMARK(BM_NoNetwork<0>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork<1>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork<2>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork<3>)->Apply(FloodBenchArguments);
+
+BENCHMARK(BM_NoNetwork_GlazeJSON<0>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_GlazeJSON<1>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_GlazeJSON<2>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_GlazeJSON<3>)->Apply(FloodBenchArguments);
+
+BENCHMARK(BM_NoNetwork_GlazeBinary<0>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_GlazeBinary<1>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_GlazeBinary<2>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_GlazeBinary<3>)->Apply(FloodBenchArguments);
+
+BENCHMARK(BM_NoNetwork_ZppBits<0>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_ZppBits<1>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_ZppBits<2>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_ZppBits<3>)->Apply(FloodBenchArguments);
+
+
+//Network Protokolls
 BENCHMARK(BM_HTTP<0>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_HTTP<1>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_HTTP<2>)->Apply(FloodBenchArguments);
@@ -124,23 +182,37 @@ BENCHMARK(BM_MQTT<1>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_MQTT<2>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_MQTT<3>)->Apply(FloodBenchArguments);
 
-BENCHMARK(BM_NoNetwork<0>)->Apply(FloodBenchArguments);
-BENCHMARK(BM_NoNetwork<1>)->Apply(FloodBenchArguments);
-BENCHMARK(BM_NoNetwork<2>)->Apply(FloodBenchArguments);
-BENCHMARK(BM_NoNetwork<3>)->Apply(FloodBenchArguments);
 
 
-BENCHMARK(BM_NoNetwork_NoSerial<0>)->Apply(FloodBenchArguments);
-BENCHMARK(BM_NoNetwork_GlazeJSON<0>)->Apply(FloodBenchArguments);
-BENCHMARK(BM_NoNetwork_GlazeBinary<0>)->Apply(FloodBenchArguments);
-BENCHMARK(BM_NoNetwork_ZppBits<0>)->Apply(FloodBenchArguments);
-
-
+//Latency Tests
+//Only Serializers
 BENCHMARK(BM_Latency_NoNetwork<0>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_NoNetwork<1>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_NoNetwork<2>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_NoNetwork<3>)->Apply(LatencyBenchArguments);
 
+BENCHMARK(BM_Latency_NoNetwork_NoSerial<0>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_NoNetwork_NoSerial<1>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_NoNetwork_NoSerial<2>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_NoNetwork_NoSerial<3>)->Apply(LatencyBenchArguments);
+
+BENCHMARK(BM_Latency_NoNetwork_GlazeJSON<0>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_NoNetwork_GlazeJSON<1>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_NoNetwork_GlazeJSON<2>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_NoNetwork_GlazeJSON<3>)->Apply(LatencyBenchArguments);
+
+BENCHMARK(BM_Latency_NoNetwork_GlazeBinary<0>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_NoNetwork_GlazeBinary<1>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_NoNetwork_GlazeBinary<2>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_NoNetwork_GlazeBinary<3>)->Apply(LatencyBenchArguments);
+
+BENCHMARK(BM_Latency_NoNetwork_ZppBits<0>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_NoNetwork_ZppBits<1>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_NoNetwork_ZppBits<2>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_NoNetwork_ZppBits<3>)->Apply(LatencyBenchArguments);
+
+
+//Network Protokolls
 BENCHMARK(BM_Latency_HTTP<0>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_HTTP<1>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_HTTP<2>)->Apply(LatencyBenchArguments);
