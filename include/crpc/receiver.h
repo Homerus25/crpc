@@ -6,17 +6,18 @@
 template<class Serializer>
 class Receiver {
 private:
-  typedef message<typename Serializer::SerializedContainer> message_t;
+  typedef message<typename Serializer::SerializedServerContainer> message_t;
 
 public:
-  Receiver(ticket_store<typename Serializer::SerializedContainer>& ts) : ts_(ts)
+  Receiver(ticket_store<typename Serializer::SerializedServerContainer>& ts) : ts_(ts)
   {}
 
-  void processAnswer(Serializer::SerializedContainer answer) {
+  template <class Container>
+  void processAnswer(Container answer) {
     auto ms = Serializer::template deserialize<message_t>(answer);
     this->ts_.setValue(ms->ticket_, ms->payload_);
   }
 
 private:
-  ticket_store<typename Serializer::SerializedContainer>& ts_;
+  ticket_store<typename Serializer::SerializedServerContainer>& ts_;
 };

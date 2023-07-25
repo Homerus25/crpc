@@ -5,10 +5,14 @@
 #include <memory>
 
 struct GlazeBinarySerializer {
-  typedef std::string SerializedContainer;
+  typedef std::string SerializedServerContainer;
+  typedef SerializedServerContainer SerializedServerMessageContainer;
+
+  typedef SerializedServerContainer SerializedClientContainer;
+  typedef SerializedServerMessageContainer SerializedClientMessageContainer;
 
   template <class In>
-  static SerializedContainer serialize(In& in) {
+  static SerializedServerContainer serialize(In& in) {
     return glz::write_binary(in);
   }
 

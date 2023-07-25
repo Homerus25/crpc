@@ -4,11 +4,15 @@
 #include "zpp_bits/zpp_bits.h"
 
 struct ZppBitsSerializer {
-  typedef std::vector<std::byte>  SerializedContainer;
+  typedef std::vector<std::byte> SerializedServerContainer;
+  typedef SerializedServerContainer SerializedServerMessageContainer;
+
+  typedef SerializedServerContainer SerializedClientContainer;
+  typedef SerializedServerMessageContainer SerializedClientMessageContainer;
 
   template <class In>
-  static SerializedContainer serialize(In& in) {
-    SerializedContainer res;
+  static SerializedServerContainer serialize(In& in) {
+    SerializedServerContainer res;
     zpp::bits::out gout(res);
     gout(in);
     return res;

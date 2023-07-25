@@ -58,7 +58,7 @@ rpc_mqtt_transport<Serialzer>::get_publish_handler() {
         Log("[client] topic_name: " , topic_name);
         Log("[client] contents: " , contents);
 
-        typename Serialzer::SerializedContainer dd(contents.begin(), contents.end());
+        typename Serialzer::SerializedServerContainer dd(contents.begin(), contents.end());
         receiver.processAnswer(dd);
 
         return true;

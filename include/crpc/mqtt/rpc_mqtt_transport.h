@@ -35,7 +35,7 @@ struct rpc_mqtt_transport {
       }
   }
 
-  void send(Serializer::SerializedContainer ms_buf) {
+  void send(Serializer::SerializedClientMessageContainer ms_buf) {
       mqtt_client_->publish(0, MQTT_NS::allocate_buffer(topic), MQTT_NS::allocate_buffer(ms_buf.begin(), ms_buf.end()));
   }
 

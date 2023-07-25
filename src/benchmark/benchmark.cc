@@ -11,21 +11,23 @@
 #include "crpc/mqtt/rpc_mqtt_transport.h"
 
 #include "crpc/serialization/cista.h"
-#include "crpc/serialization/no_serialization.h"
-#include "crpc/serialization/glaze_json.h"
 #include "crpc/serialization/glaze_binary.h"
+#include "crpc/serialization/glaze_json.h"
+#include "crpc/serialization/tuple_serialization.h"
 #include "crpc/serialization/zpp_bits_serialization.h"
 
+#include "no_serializer_bench.h"
+
 template <int funcNum>
-static void BM_NoNetwork(benchmark::State& state) {
+static void BM_NoNetwork_Cista(benchmark::State& state) {
   FloodBench<no_network_server, no_network_client, benchmark_interface, CistaSerialzer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
 }
 
 template <int funcNum>
-static void BM_NoNetwork_NoSerial(benchmark::State& state) {
+static void BM_NoNetwork_Tuple(benchmark::State& state) {
   FloodBench<no_network_server, no_network_client, benchmark_interface,
-             NoSerializer> bench(state.range(0), state.range(1));
+             TupleSerializer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
 }
 
@@ -71,15 +73,16 @@ static void BM_MQTT(auto& state) {
 
 
 template <int funcNum>
-static void BM_Latency_NoNetwork(benchmark::State& state) {
+static void BM_Latency_NoNetwork_Cista(benchmark::State& state) {
   LatencyBench<no_network_server, no_network_client, benchmark_interface, CistaSerialzer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
   bench.writeLatencies("latencies_NoNetwork_<" + std::to_string(funcNum) + ">.txt");
 }
 
 template <int funcNum>
-static void BM_Latency_NoNetwork_NoSerial(benchmark::State& state) {
-  LatencyBench<no_network_server, no_network_client, benchmark_interface, NoSerializer> bench(state.range(0), state.range(1));
+static void BM_Latency_NoNetwork_Tuple(benchmark::State& state) {
+  LatencyBench<no_network_server, no_network_client, benchmark_interface,
+               TupleSerializer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
   bench.writeLatencies("latencies_NoNetwork_<" + std::to_string(funcNum) + ">.txt");
 }
@@ -131,7 +134,7 @@ static void BM_Latency_MQTT(benchmark::State& state) {
 
 
 static void FloodBenchArguments(benchmark::internal::Benchmark* b) {
-  b->UseRealTime()->ArgsProduct({benchmark::CreateRange(1, 128, 2), benchmark::CreateRange(1, 128, 2)})->Unit(benchmark::kMillisecond);
+  b->UseRealTime()->ArgsProduct({benchmark::CreateRange(1, 64, 2), benchmark::CreateRange(1, 64, 2)})->Unit(benchmark::kMillisecond);//->Repetitions(3);
 }
 
 static void LatencyBenchArguments(benchmark::internal::Benchmark* b) {
@@ -140,15 +143,15 @@ static void LatencyBenchArguments(benchmark::internal::Benchmark* b) {
 
 //Flood Benchs
 //Only Serializers
-BENCHMARK(BM_NoNetwork_NoSerial<0>)->Apply(FloodBenchArguments);
-BENCHMARK(BM_NoNetwork_NoSerial<1>)->Apply(FloodBenchArguments);
-BENCHMARK(BM_NoNetwork_NoSerial<2>)->Apply(FloodBenchArguments);
-BENCHMARK(BM_NoNetwork_NoSerial<3>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_NoSerializer<0>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_NoSerializer<1>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_NoSerializer<2>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_NoSerializer<3>)->Apply(FloodBenchArguments);
 
-BENCHMARK(BM_NoNetwork<0>)->Apply(FloodBenchArguments);
-BENCHMARK(BM_NoNetwork<1>)->Apply(FloodBenchArguments);
-BENCHMARK(BM_NoNetwork<2>)->Apply(FloodBenchArguments);
-BENCHMARK(BM_NoNetwork<3>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_Cista<0>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_Cista<1>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_Cista<2>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_NoNetwork_Cista<3>)->Apply(FloodBenchArguments);
 
 BENCHMARK(BM_NoNetwork_GlazeJSON<0>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_NoNetwork_GlazeJSON<1>)->Apply(FloodBenchArguments);
@@ -186,15 +189,15 @@ BENCHMARK(BM_MQTT<3>)->Apply(FloodBenchArguments);
 
 //Latency Tests
 //Only Serializers
-BENCHMARK(BM_Latency_NoNetwork<0>)->Apply(LatencyBenchArguments);
-BENCHMARK(BM_Latency_NoNetwork<1>)->Apply(LatencyBenchArguments);
-BENCHMARK(BM_Latency_NoNetwork<2>)->Apply(LatencyBenchArguments);
-BENCHMARK(BM_Latency_NoNetwork<3>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_NoNetwork_NoSerializer_Latencies<0>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_NoNetwork_NoSerializer_Latencies<1>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_NoNetwork_NoSerializer_Latencies<2>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_NoNetwork_NoSerializer_Latencies<3>)->Apply(LatencyBenchArguments);
 
-BENCHMARK(BM_Latency_NoNetwork_NoSerial<0>)->Apply(LatencyBenchArguments);
-BENCHMARK(BM_Latency_NoNetwork_NoSerial<1>)->Apply(LatencyBenchArguments);
-BENCHMARK(BM_Latency_NoNetwork_NoSerial<2>)->Apply(LatencyBenchArguments);
-BENCHMARK(BM_Latency_NoNetwork_NoSerial<3>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_NoNetwork_Cista<0>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_NoNetwork_Cista<1>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_NoNetwork_Cista<2>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_NoNetwork_Cista<3>)->Apply(LatencyBenchArguments);
 
 BENCHMARK(BM_Latency_NoNetwork_GlazeJSON<0>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_NoNetwork_GlazeJSON<1>)->Apply(LatencyBenchArguments);

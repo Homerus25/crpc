@@ -6,13 +6,17 @@
 #include "../log.h"
 
 struct CistaSerialzer {
-  typedef cista::offset::vector<unsigned char>  SerializedContainer;
+  typedef cista::offset::vector<unsigned char>  SerializedServerContainer;
+  typedef SerializedServerContainer SerializedServerMessageContainer;
+
+  typedef SerializedServerContainer SerializedClientContainer;
+  typedef SerializedServerMessageContainer SerializedClientMessageContainer;
 
   template <class In>
-  static SerializedContainer serialize(In& in) {
+  static SerializedServerContainer serialize(In& in) {
     try {
       auto con = cista::serialize(in);
-      return SerializedContainer(con.begin(), con.end());
+      return SerializedServerContainer(con.begin(), con.end());
     }catch (cista::cista_exception& ex) {
       LogErr("send failed to serialize message: ", ex.what());
     }

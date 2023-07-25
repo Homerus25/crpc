@@ -13,7 +13,7 @@
 template<typename ReturnType, typename Serializer>
 class return_object {
 public:
-    explicit return_object(std::future<typename Serializer::SerializedContainer>& fut)
+    explicit return_object(std::future<typename Serializer::SerializedServerContainer>& fut)
         : future(std::move(fut))
     {}
 
@@ -27,7 +27,7 @@ public:
     }
 
 private:
-    std::future<typename Serializer::SerializedContainer> future;
+    std::future<typename Serializer::SerializedServerContainer> future;
 };
 
 template <typename Transport, typename Interface, typename Serializer>
@@ -41,13 +41,13 @@ public:
     template <typename ReturnType, typename... Args>
     return_object<ReturnType, Serializer> call(fn<ReturnType, Args...> Interface::*const member_ptr,
                     Args&&... args) {
-        std::future<typename Serializer::SerializedContainer> response;
+        std::future<typename Serializer::SerializedServerContainer> response;
         response = sendMS(index_of_member(member_ptr), args...);
         return return_object<ReturnType, Serializer>(response);
     }
 
     template < typename... Args>
-    std::future<typename Serializer::SerializedContainer> sendMS(unsigned fn_idx,
+    std::future<typename Serializer::SerializedServerContainer> sendMS(unsigned fn_idx,
                                                  Args&&... args) {
         auto ticket_num = this->ts_.nextNumber();
         auto future = this->ts_.emplace(ticket_num);
@@ -58,14 +58,10 @@ public:
             ticket_num, fn_idx,
             conTup
         };
-        auto ms_buf = serializeMessage(ms);
+        auto ms_buf = Serializer::serialize(ms);
 
         transport.send(ms_buf);
         return future;
-    }
-
-    auto serializeMessage(message<typename Serializer::SerializedContainer>& ms) const {
-        return Serializer::serialize(ms);
     }
 
     template < typename... Args>
@@ -79,5 +75,5 @@ public:
     }
   private:
     Transport transport;
-    ticket_store<typename Serializer::SerializedContainer> ts_;
+    ticket_store<typename Serializer::SerializedServerContainer> ts_;
 };

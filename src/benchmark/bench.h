@@ -197,7 +197,7 @@ void Bench<Interface, Serializer, isFloodBench, Server, Client>::startServer(con
 template<typename Interface, typename Serializer, bool isFloodBench, template <typename, typename> typename Server, template <typename, typename> typename Client>
 void Bench<Interface, Serializer, isFloodBench, Server, Client>::buildClients(const int client_concurrency) {
   if constexpr (std::is_same_v<no_network_server<Interface, Serializer>, Server<Interface, Serializer>>) {
-    std::function<void(std::unique_ptr<typename Serializer::SerializedContainer>, std::function<void(std::unique_ptr<typename Serializer::SerializedContainer>)>)> const transportLambda = [this](std::unique_ptr<typename Serializer::SerializedContainer> message, auto rcv) {
+    auto const transportLambda = [this](auto message, auto rcv) {
       server->receive(std::move(message), rcv);
     };
 

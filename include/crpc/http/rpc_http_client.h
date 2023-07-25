@@ -39,7 +39,7 @@ struct http_transport {
     }
   }
 
-  void send(Serializer::SerializedContainer ms_buf) {
+  void send(Serializer::SerializedClientMessageContainer ms_buf) {
     std::string ms_string(begin(ms_buf), end(ms_buf));
 
     auto s_req = std::make_shared<net::http::client::request>(
@@ -71,7 +71,7 @@ struct http_transport {
       if (ec) {
         LogErr("error: ", ec.message());
       } else {
-        typename Serializer::SerializedContainer dd(res.body.begin(), res.body.end());
+        typename Serializer::SerializedServerContainer dd(res.body.begin(), res.body.end());
         this->receiver.processAnswer(dd);
         queryInProgress = false;
         ios_.post([this](){

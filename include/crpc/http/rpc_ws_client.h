@@ -29,7 +29,7 @@ struct ws_transport {
     });
 
     client->on_msg([&](std::string const& msg, bool /* binary */) {
-      typename Serializer::SerializedContainer dd(msg.begin(), msg.end());
+      typename Serializer::SerializedServerContainer dd(msg.begin(), msg.end());
       receiver.processAnswer(dd);
     });
 
@@ -39,7 +39,7 @@ struct ws_transport {
     cv.wait(lk, [&] { return isConnected; });
   }
 
-  void send(Serializer::SerializedContainer ms_buf) {
+  void send(Serializer::SerializedClientMessageContainer ms_buf) {
     auto const ms_string = std::string(begin(ms_buf), end(ms_buf));
     client->send(ms_string, true);
   }
