@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 template<typename SerializedContainer>
 struct message {
     uint64_t ticket_;

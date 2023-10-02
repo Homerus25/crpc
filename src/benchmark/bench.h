@@ -6,12 +6,11 @@
 #include "crpc/no_network/no_network_server.h"
 
 #include "crpc/serialization/cista.h"
-#include "crpc/serialization/no_serialization.h"
 
 #include <future>
 #include <fstream>
 
-#define DATASIZE 1024 * 32
+#define DATASIZE 1024 * 64
 
 template<typename Interface, typename Serializer, bool isFloodBench, template <typename, typename> typename Server, template <typename, typename> typename Client>
 class Bench {
@@ -134,9 +133,6 @@ void Bench<Interface, Serializer, isFloodBench, Server, Client>::setStateCounter
 template<typename Interface, typename Serializer, bool isFloodBench, template <typename, typename> typename Server, template <typename, typename> typename Client>
 template <int funcNum>
 void Bench<Interface, Serializer, isFloodBench, Server, Client>::run(auto& state) {
-  if constexpr (funcNum != 0)
-    requests_per_client /= 8;
-
   setStateCounter(state);
 
   if constexpr (isFloodBench) {

@@ -25,4 +25,16 @@ struct ZppBitsSerializer {
     gin(res);
     return std::make_shared<Out>(res);
   }
+
+  static std::string toString(std::vector<std::byte>& in) {
+    auto bytes = reinterpret_cast<char const*>(in.data());
+    auto bytes_end = bytes + in.size();
+    return std::string(bytes, bytes_end);
+  }
+
+  static std::vector<std::byte> fromString(auto& in) {
+    auto bytes = reinterpret_cast<std::byte const*>(in.data());
+    auto bytes_end = bytes + in.size();
+    return std::vector<std::byte>(bytes, bytes_end);
+  }
 };

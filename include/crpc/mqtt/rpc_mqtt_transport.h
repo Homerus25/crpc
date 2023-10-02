@@ -36,7 +36,9 @@ struct rpc_mqtt_transport {
   }
 
   void send(Serializer::SerializedClientMessageContainer ms_buf) {
-      mqtt_client_->publish(0, MQTT_NS::allocate_buffer(topic), MQTT_NS::allocate_buffer(ms_buf.begin(), ms_buf.end()));
+      auto bytes = reinterpret_cast<char const*>(ms_buf.data());
+      auto bytes_end = bytes + ms_buf.size();
+      mqtt_client_->publish(0, MQTT_NS::allocate_buffer(topic), MQTT_NS::allocate_buffer(bytes, bytes_end));
   }
 
   void close_connection() {

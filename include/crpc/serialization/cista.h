@@ -15,8 +15,9 @@ struct CistaSerialzer {
   template <class In>
   static SerializedServerContainer serialize(In& in) {
     try {
-      auto con = cista::serialize(in);
-      return SerializedServerContainer(con.begin(), con.end());
+      cista::buf<SerializedServerContainer> buf;
+      cista::serialize<cista::mode::NONE, cista::buf<SerializedServerContainer>>(buf, in);
+      return buf.buf_;
     }catch (cista::cista_exception& ex) {
       LogErr("send failed to serialize message: ", ex.what());
     }
@@ -25,7 +26,7 @@ struct CistaSerialzer {
   template <class Out, class In>
   static auto deserialize(In& in) {
     try {
-      return cista::deserialize<Out>(in);
+      return cista::deserialize<Out, cista::mode::CAST>(in);
     }catch (cista::cista_exception& ex) {
       LogErr("error deserialze message on server: ", ex.what());
     }

@@ -100,4 +100,4 @@ target_link_libraries(crpc-mqtt-server crpc Boost::log)
 ################################
 add_executable(crpc-benchmark src/benchmark/benchmark.cc include/crpc/mqtt/rpc_mqtt_transport.h)
 target_include_directories(crpc-benchmark PUBLIC deps/benchmark/include deps/mqtt_cpp/include)
-target_link_libraries(crpc-benchmark crpc benchmark web-server http-client)
+target_link_libraries(crpc-benchmark crpc benchmark web-server http-client)# Boost::coroutine)

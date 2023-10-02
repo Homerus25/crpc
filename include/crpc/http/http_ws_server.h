@@ -18,7 +18,7 @@ class http_ws_server : public rpc_server<Interface, Serializer>  {
 public:
   http_ws_server() {
     webs_ = std::unique_ptr<web_server>(new web_server{ioc_});
-    webs_->set_request_body_limit(1024 * 32 + 1024);
+    webs_->set_request_body_limit(1024 * 64 + 1024);
 
     webs_->on_ws_msg([this](ws_session_ptr const& s, std::string const& msg,
                         ws_msg_type type) {
@@ -26,8 +26,7 @@ public:
       if (auto session = s.lock()) {
         auto response = this->process_message(msg);
         if (response.has_value()) {
-          std::string resMs(response.value().begin(), response.value().end());
-          session->send(resMs, type,
+          session->send(response.value(), type,
                         [](boost::system::error_code ec, std::size_t) {
                           if (ec) {
                             LogErr("send ec: ", ec.message());
@@ -49,12 +48,9 @@ public:
     webs_->on_http_request([this](web_server::http_req_t const& req,
                                  web_server::http_res_cb_t const& cb, bool ssl) {
       boost::ignore_unused(ssl);
-      //Log("got ms: ", req.body());
       auto response = this->process_message(req.body());
       if (response.has_value()) {
-        auto resVal = response.value();
-        std::string resMs(resVal.begin(), resVal.end());
-        return cb(string_response(req, resMs, boost::beast::http::status::ok, "binary"));
+        return cb(string_response(req, Serializer::toString(response.value())/*resMs*/, boost::beast::http::status::ok, "binary"));
       }
       LogErr("server wants to send empty response!");
       return cb(empty_response(req, boost::beast::http::status::ok));

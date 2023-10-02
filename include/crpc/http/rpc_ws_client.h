@@ -29,8 +29,7 @@ struct ws_transport {
     });
 
     client->on_msg([&](std::string const& msg, bool /* binary */) {
-      typename Serializer::SerializedServerContainer dd(msg.begin(), msg.end());
-      receiver.processAnswer(dd);
+      receiver.processAnswer(Serializer::fromString(msg));
     });
 
     runner = std::thread([&](){ ioc_.run(); });
@@ -40,7 +39,10 @@ struct ws_transport {
   }
 
   void send(Serializer::SerializedClientMessageContainer ms_buf) {
-    auto const ms_string = std::string(begin(ms_buf), end(ms_buf));
+    auto bytes = reinterpret_cast<char const*>(ms_buf.data());
+    auto bytes_end = bytes + ms_buf.size();
+    std::string ms_string(bytes, bytes_end);
+
     client->send(ms_string, true);
   }
 

@@ -71,7 +71,11 @@ rpc_mqtt_server<Interface, Serializer>::get_publish_handler(std::weak_ptr<con_t>
           auto shared_ptr_endpoint = wp.lock();
           BOOST_ASSERT(shared_ptr_endpoint);
           auto res_buf = response.value();
-          auto bb = MQTT_NS::allocate_buffer(res_buf.begin(), res_buf.end());
+
+          auto bytes = reinterpret_cast<char const*>(res_buf.data());
+          auto bytes_end = bytes + res_buf.size();
+          auto bb = MQTT_NS::allocate_buffer(bytes, bytes_end);
+
           shared_ptr_endpoint->async_publish(topic_name, bb);
         }
 

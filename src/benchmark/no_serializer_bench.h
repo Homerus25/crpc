@@ -32,85 +32,6 @@ struct IdentitySerializer {
     return std::make_unique<Out>(std::move(in));
   }
 };
-/*
-static void BM_NoNet_NoSerial_average(benchmark::State& state) {
-  typedef IdentitySerializer<double, std::vector<double>> Serializer;
-  //typedef IdentitySerializer<double> SerializerServer;
-  typedef benchmark_interface<Serializer> InterfaceT;
-  typedef no_network_server<InterfaceT, Serializer> ServerT;
-  std::unique_ptr<ServerT> server = std::make_unique<ServerT>();
-
-  int server_concurrency = state.range(0);
-  int client_concurrency = state.range(1);
-
-  server->reg(&InterfaceT::average,
-             [](const std::vector<double>& vec) {
-               double avg = 0.;
-               for (double element : vec) avg += element / vec.size();
-               return avg;
-             });
-
-  server->run(server_concurrency);
-
-
-  auto const transportLambda = [&server](auto message, auto rcv) {
-    server->receive(std::move(message), rcv);
-  };
-
-
-  typedef no_network_client<InterfaceT, Serializer> ClientT;
-  std::vector<std::unique_ptr<ClientT>> clients;
-  for(int i=0; i<client_concurrency; ++i)
-    clients.emplace_back(std::make_unique<ClientT>(transportLambda));
-  //std::unique_ptr<ClientT> client = std::make_unique<ClientT>(transportLambda);
-
-  int request_count = 32 * 1024;
-
-  state.counters["Requests"] = request_count;
-  state.counters["Req_per_second"] = benchmark::Counter(request_count, benchmark::Counter::kIsRate);
-
-
-  auto benchFunc = [](auto& client){
-    //return client->call(&InterfaceT::say_hello,
-    //                    std::string("peter"));
-    return client->call(&benchmark_interface<Serializer>::average,
-                        std::vector<double>(1024 * 64 / sizeof(double)));
-  };
-
-
-  std::vector<std::future<void>> clientRes;
-  clientRes.reserve(client_concurrency);
-
-  for (auto _ : state) {
-    for (auto& client : clients) {
-      clientRes.push_back(std::async(std::launch::async, [&client, &benchFunc, request_count]() {
-        // clientRes =
-        // std::async(std::launch::async, [&client, &benchFunc]() {
-        std::vector<decltype(benchFunc(client))> resp;
-        // std::vector<std::string> resp;
-        resp.reserve(request_count);
-        for (int i = 0; i < request_count; ++i) {
-          resp.push_back(benchFunc(client));
-        }
-
-        for (auto& re : resp) {
-          re();
-        }
-        //});
-        // clientRes.wait();
-      }));
-    }
-    for(auto& res: clientRes) {
-      res.wait();
-    }
-    clientRes.clear();
-  }
-
-  for (auto& client:clients)
-    client->stop();
-  server->stop();
-}
-*/
 
 template<typename RetType, typename ParamType>
 static void BM_NoNet_NoSerial_Latency_Template(benchmark::State& state, auto regFn, auto benchFunc, std::string filename) {
@@ -212,7 +133,7 @@ static void BM_NoNet_NoSerial_Template(benchmark::State& state, auto regFn, auto
   for(int i=0; i<client_concurrency; ++i)
     clients.emplace_back(std::make_unique<ClientT>(transportLambda));
 
-  int request_count = 64 * 1024;
+  int request_count = 256 * 1024;
   int requests_per_client = request_count / client_concurrency;
 
   state.counters["Requests"] = request_count;
@@ -321,7 +242,7 @@ static void BM_NoNetwork_NoSerializer(benchmark::State& state) {
 }
 
 template<int funcNum>
-static void BM_NoNetwork_NoSerializer_Latencies(benchmark::State& state) {
+static void BM_Latency_NoNetwork_NoSerializer(benchmark::State& state) {
   if constexpr (funcNum == 0) {
     typedef benchmark_interface<IdentitySerializer<std::string, std::string>> InterfaceT;
     BM_NoNet_NoSerial_Latency_Template<std::string, std::string>(state, [](auto& server){
@@ -333,7 +254,7 @@ static void BM_NoNetwork_NoSerializer_Latencies(benchmark::State& state) {
           return client->call(&InterfaceT::say_hello,
                               std::string("peter"));
         },
-        "latencies_noSerializer<0>.txt");
+        "latencies_NoNetwork_NoSerializer_<0>.txt");
   }
   else if constexpr (funcNum == 1) {
     typedef benchmark_interface<IdentitySerializer<double, std::vector<double>>> InterfaceT;
@@ -349,7 +270,7 @@ static void BM_NoNetwork_NoSerializer_Latencies(benchmark::State& state) {
           return client->call(&InterfaceT::average,
                               std::vector<double>(1024 * 64 / sizeof(double)));
         },
-        "latencies_noSerializer<1>.txt");
+        "latencies_NoNetwork_NoSerializer_<1>.txt");
   }
   else if constexpr (funcNum == 2) {
     typedef benchmark_interface<IdentitySerializer<std::vector<double>, int>> InterfaceT;
@@ -364,7 +285,7 @@ static void BM_NoNetwork_NoSerializer_Latencies(benchmark::State& state) {
           return client->call(&InterfaceT::get_rand_nums,
                               int(DATASIZE / sizeof(double)));
         },
-        "latencies_noSerializer<2>.txt");
+        "latencies_NoNetwork_NoSerializer_<2>.txt");
   }
   else {
     typedef benchmark_interface<IdentitySerializer<std::vector<unsigned char>, std::vector<unsigned char>>> InterfaceT;
@@ -378,6 +299,6 @@ static void BM_NoNetwork_NoSerializer_Latencies(benchmark::State& state) {
           return client->call(&InterfaceT::send_rcv_large_data,
                               std::vector<unsigned char>(DATASIZE / sizeof(unsigned char)));
         },
-        "latencies_noSerializer<3>.txt");
+        "latencies_NoNetwork_NoSerializer_<3>.txt");
   }
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cista/reflection/for_each_field.h>
+#include <limits>
 
 template <typename ReturnType, typename... Args>
 struct fn {};
