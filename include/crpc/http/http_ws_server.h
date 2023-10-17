@@ -45,8 +45,8 @@ public:
 
     webs_->on_ws_close([](void* s) { Log("session close: ", s); });
 
-    webs_->on_http_request([this](web_server::http_req_t const& req,
-                                 web_server::http_res_cb_t const& cb, bool ssl) {
+    webs_->on_http_request([this](http_req_t const& req,
+                                 http_res_cb_t const& cb, bool ssl) {
       boost::ignore_unused(ssl);
       auto response = this->process_message(req.body());
       if (response.has_value()) {
