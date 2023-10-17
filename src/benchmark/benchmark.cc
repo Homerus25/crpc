@@ -4,6 +4,8 @@
 
 #include "crpc/http/http_ws_server.h"
 #include "crpc/http/rpc_http_client.h"
+#include "crpc/http2/http2_server.h"
+#include "crpc/http2/http2_client.h"
 #include "crpc/http/rpc_ws_client.h"
 #include "crpc/mqtt/rpc_mqtt_server.h"
 #include "crpc/mqtt/rpc_mqtt_transport.h"
@@ -57,6 +59,12 @@ static void BM_NoNetwork_ZppBits(benchmark::State& state) {
 template <int funcNum>
 static void BM_HTTP(benchmark::State& state) {
   FloodBench<http_ws_server, rpc_http_client, benchmark_interface, DefaultSerializer> bench(state.range(0), state.range(1));
+  bench.run<funcNum>(state);
+}
+
+template <int funcNum>
+static void BM_HTTP2(benchmark::State& state) {
+  FloodBench<http2_server, rpc_http2_client, benchmark_interface, DefaultSerializer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
 }
 
@@ -119,6 +127,13 @@ static void BM_Latency_HTTP(benchmark::State& state) {
 }
 
 template <int funcNum>
+static void BM_Latency_HTTP2(benchmark::State& state) {
+  LatencyBench<http2_server, rpc_http2_client, benchmark_interface, DefaultSerializer> bench(state.range(0), state.range(1));
+  bench.run<funcNum>(state);
+  bench.writeLatencies("latencies_HTTP2_<" + std::to_string(funcNum) + ">.txt");
+}
+
+template <int funcNum>
 static void BM_Latency_WS(benchmark::State& state) {
   LatencyBench<http_ws_server, rpc_ws_client, benchmark_interface, DefaultSerializer> bench(state.range(0), state.range(1));
   bench.run<funcNum>(state);
@@ -176,6 +191,11 @@ BENCHMARK(BM_HTTP<1>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_HTTP<2>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_HTTP<3>)->Apply(FloodBenchArguments);
 
+BENCHMARK(BM_HTTP2<0>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_HTTP2<1>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_HTTP2<2>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_HTTP2<3>)->Apply(FloodBenchArguments);
+
 BENCHMARK(BM_WS<0>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_WS<1>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_WS<2>)->Apply(FloodBenchArguments);
@@ -222,6 +242,12 @@ BENCHMARK(BM_Latency_HTTP<1>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_HTTP<2>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_HTTP<3>)->Apply(LatencyBenchArguments);
 
+BENCHMARK(BM_Latency_HTTP2<0>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_HTTP2<1>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_HTTP2<2>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_HTTP2<3>)->Apply(LatencyBenchArguments);
+
+/*
 BENCHMARK(BM_Latency_WS<0>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_WS<1>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_WS<2>)->Apply(LatencyBenchArguments);

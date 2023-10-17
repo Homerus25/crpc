@@ -3,6 +3,7 @@
 build() {
   cmake ..
   cmake  --build . --target crpc-http-ws-server crpc-http-client crpc-ws-client crpc-mqtt-server crpc-mqtt-client
+  cmake  --build . --target crpc-http-ws-server crpc-http-client crpc-ws-client crpc-mqtt-server crpc-mqtt-client crpc-http2-server crpc-http2-client
 }
 
 check() {
@@ -40,6 +41,19 @@ test-http() {
   check $exitCode "http"
 }
 
+test-http2() {
+  ./crpc-http2-server &
+  local PIDserver=$!
+  sleep 1
+
+  ./crpc-http2-client
+  local exitCode=$?
+
+  kill $PIDserver
+
+  check $exitCode "http"
+}
+
 test-mqtt() {
   ./crpc-mqtt-server 1 &
   local PIDserver=$!
@@ -59,6 +73,9 @@ echo "test websocket"
 test-websocket
 
 echo "test http"
+test-http
+
+echo "test http2"
 test-http
 
 echo "test mqtt"

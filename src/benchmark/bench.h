@@ -10,6 +10,8 @@
 #include <future>
 #include <fstream>
 
+#include <latch>
+
 #define DATASIZE 1024 * 64
 
 template<typename Interface, typename Serializer, bool isFloodBench, template <typename, typename> typename Server, template <typename, typename> typename Client>
@@ -136,20 +138,41 @@ void Bench<Interface, Serializer, isFloodBench, Server, Client>::run(auto& state
   setStateCounter(state);
 
   if constexpr (isFloodBench) {
-    std::vector<std::future<void>> clientRes;
+    std::vector<std::thread> clientRes;
     clientRes.reserve(clients.size());
 
-    for (auto _ : state) {
-      for (auto& client : clients) {
-        clientRes.push_back(
-            std::async(std::launch::async, getFloodBenchFunction<funcNum>(client)));
-      }
+    std::latch prepare_phase{clients.size()};
+    std::latch start_signal{1};
+    std::latch work_phase{clients.size()};
 
-      for (auto& clf : clientRes) {
-        clf.wait();
-      }
-      clientRes.clear();
+    for (auto& client : clients) {
+      clientRes.emplace_back([&]{
+        std::vector<decltype(benchmarkFunction<funcNum>(client))> resp;
+        resp.reserve(requests_per_client);
+        prepare_phase.arrive_and_wait(1);
+        start_signal.wait();
+
+        for (int i = 0; i < requests_per_client; ++i) {
+          resp.push_back(benchmarkFunction<funcNum>(client));
+        }
+
+        for (auto& re : resp) {
+          re();
+        }
+        work_phase.count_down(1);
+      });
     }
+
+    // unlock all clients
+    prepare_phase.wait();
+
+    for (auto _ : state) {
+      start_signal.count_down(1);
+      work_phase.wait();
+    }
+
+    for(auto& tr : clientRes)
+      tr.join();
   } else {
     std::vector<std::future<std::vector<std::chrono::nanoseconds>>> clientRes;
     clientRes.reserve(clients.size());

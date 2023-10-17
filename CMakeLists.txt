@@ -28,6 +28,7 @@ include_directories(deps/net)
 include_directories(deps/benchmark/include)
 include_directories(deps/mqtt_cpp/include)
 include_directories(deps/glaze/include)
+include_directories(deps/nghttp2-asio/lib/includes)
 include_directories(external_lib)
 
 
@@ -76,6 +77,12 @@ target_link_libraries(crpc-http-client crpc http-client)
 add_executable(crpc-ws-client test/http_ws/rpc_ws_client.cc src/ws_client.cc)
 target_link_libraries(crpc-ws-client crpc)
 
+# http2
+add_executable(crpc-http2-server test/http2/http2_server.cc)
+target_link_libraries(crpc-http2-server crpc nghttp2_asio)
+
+add_executable(crpc-http2-client test/http2/http2_client.cc)
+target_link_libraries(crpc-http2-client crpc nghttp2_asio)
 
 # no network
 add_executable(crpc-no-network-benchmark test/no_network/no_network.cc)
@@ -100,4 +107,4 @@ target_link_libraries(crpc-mqtt-server crpc Boost::log)
 ################################
 add_executable(crpc-benchmark src/benchmark/benchmark.cc include/crpc/mqtt/rpc_mqtt_transport.h)
 target_include_directories(crpc-benchmark PUBLIC deps/benchmark/include deps/mqtt_cpp/include)
-target_link_libraries(crpc-benchmark crpc benchmark web-server http-client)# Boost::coroutine)
+target_link_libraries(crpc-benchmark crpc benchmark web-server http-client nghttp2_asio)

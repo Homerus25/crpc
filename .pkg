@@ -13,7 +13,7 @@
 [net]
   url=git@github.com:Homerus25/net.git
   branch=crpc-improvements
-  commit=e3b8d0b58f8598cf0c858d7794cc6c21dda712b0
+  commit=1f9c56eefbac08c59ffbc23dcc28d4f7458162e2
 [mqtt_cpp]
   url=git@github.com:redboltz/mqtt_cpp.git
   branch=master
@@ -24,3 +24,5 @@
 [glaze]
   url=git@github.com:stephenberry/glaze.git
   branch=main
+[nghttp2-asio]
+  url=git@github.com:nghttp2/nghttp2-asio.git
