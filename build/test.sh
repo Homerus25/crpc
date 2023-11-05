@@ -2,7 +2,7 @@
 
 build() {
   cmake ..
-  cmake  --build . --target crpc-http-ws-server crpc-http-client crpc-ws-client crpc-mqtt-server crpc-mqtt-client
+  #cmake  --build . --target clean 
   cmake  --build . --target crpc-http-ws-server crpc-http-client crpc-ws-client crpc-mqtt-server crpc-mqtt-client crpc-http2-server crpc-http2-client
 }
 

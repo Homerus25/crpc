@@ -80,6 +80,19 @@ static void BM_MQTT(auto& state) {
   bench.run<funcNum>(state);
 }
 
+template <int funcNum>
+static void BM_CUSTOM_AVERAGE(benchmark::State& state) {
+  FloodBench<rpc_mqtt_server, rpc_mqtt_client, benchmark_interface, GlazeBinarySerializer> bench(state.range(0), state.range(1));
+  bench.run<funcNum>(state);
+}
+
+template <int funcNum>
+static void BM_Latency_CUSTOM_AVERAGE(benchmark::State& state) {
+  LatencyBench<rpc_mqtt_server, rpc_mqtt_client, benchmark_interface, GlazeBinarySerializer> bench(state.range(0), state.range(1));
+  bench.run<funcNum>(state);
+  bench.writeLatencies("latencies_custom_<" + std::to_string(funcNum) + ">.txt");
+}
+
 
 template <int funcNum>
 static void BM_Latency_NoNetwork_Cista(benchmark::State& state) {
@@ -150,7 +163,8 @@ static void BM_Latency_MQTT(benchmark::State& state) {
 
 
 static void FloodBenchArguments(benchmark::internal::Benchmark* b) {
-  b->UseRealTime()->ArgsProduct({benchmark::CreateRange(1, 64, 2), benchmark::CreateRange(1, 64, 2)})->Unit(benchmark::kMillisecond);//->Repetitions(3);
+  //b->UseRealTime()->ArgsProduct({benchmark::CreateRange(1, 64, 2), benchmark::CreateRange(1, 64, 2)})->Unit(benchmark::kMillisecond);//->Repetitions(3);
+  b->UseRealTime()->ArgPair(4, 4)->Unit(benchmark::kMillisecond)->Repetitions(3);
 }
 
 static void LatencyBenchArguments(benchmark::internal::Benchmark* b) {
@@ -185,6 +199,9 @@ BENCHMARK(BM_NoNetwork_ZppBits<2>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_NoNetwork_ZppBits<3>)->Apply(FloodBenchArguments);
 
 
+BENCHMARK(BM_CUSTOM_AVERAGE<1>)->Apply(FloodBenchArguments);
+BENCHMARK(BM_CUSTOM_AVERAGE<3>)->Apply(FloodBenchArguments);
+
 //Network Protokolls
 BENCHMARK(BM_HTTP<0>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_HTTP<1>)->Apply(FloodBenchArguments);
@@ -205,6 +222,9 @@ BENCHMARK(BM_MQTT<0>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_MQTT<1>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_MQTT<2>)->Apply(FloodBenchArguments);
 BENCHMARK(BM_MQTT<3>)->Apply(FloodBenchArguments);
+
+BENCHMARK(BM_Latency_CUSTOM_AVERAGE<0>)->Apply(LatencyBenchArguments);
+BENCHMARK(BM_Latency_CUSTOM_AVERAGE<1>)->Apply(LatencyBenchArguments);
 
 
 
@@ -247,7 +267,6 @@ BENCHMARK(BM_Latency_HTTP2<1>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_HTTP2<2>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_HTTP2<3>)->Apply(LatencyBenchArguments);
 
-/*
 BENCHMARK(BM_Latency_WS<0>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_WS<1>)->Apply(LatencyBenchArguments);
 BENCHMARK(BM_Latency_WS<2>)->Apply(LatencyBenchArguments);

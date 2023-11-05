@@ -20,4 +20,12 @@ struct GlazeBinarySerializer {
   static auto deserialize(In& in) {
     return std::make_shared<Out>(glz::read_binary<Out>(in).value());
   }
+
+  static std::string toString(std::string& in) {
+    return in;
+  }
+
+  static std::string fromString(auto& in) {
+    return std::string(in);
+  }
 };

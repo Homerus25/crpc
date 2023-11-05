@@ -195,7 +195,7 @@ template<typename Interface, typename Serializer, bool isFloodBench, template <t
 Bench<Interface, Serializer, isFloodBench, Server, Client>::Bench(int server_concurrency, int client_concurrency) {
   startServer(server_concurrency);
   buildClients(client_concurrency);
-  const int requests = 1 * 1024;
+  const int requests = 256 * 1024;
   requests_per_client = requests / client_concurrency;
 }
 
